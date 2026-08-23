@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,300;0,500;1,300&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Cormorant Garamond", serif;
+  
+  --color-bg: #0A0A0B;
+  --color-card: #141416;
+  --color-accent: #C5A059;
+  --color-text-dim: #8E8E93;
+}
+
+@layer base {
+  body {
+    @apply antialiased bg-bg text-[#F2F2F7];
+  }
+}
+
+.border-refined {
+  border: 1px solid rgba(197, 160, 89, 0.2);
+}
+
+.glass {
+  background: rgba(20, 20, 22, 0.7);
+  backdrop-filter: blur(12px);
+}
+
+/* Custom Scrollbar for the Technical Dashboard vibe */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply bg-accent/40;
+  border-radius: 2px;
+}

@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "SiphonedChunk": {
+      "title": "Siphoned Genetic DNA",
+      "description": "High-fidelity code patterns extracted from repositories.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "file": { "type": "string" },
+        "code": { "type": "string" },
+        "explanation": { "type": "string" },
+        "mutation": { "type": "string" },
+        "intentAlignmentScore": { "type": "number" },
+        "philosophyCheck": { "type": "string" },
+        "ccrrScore": { "type": "number" },
+        "suggestedBranchName": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "file", "code", "userId", "createdAt"]
+    },
+    "SystemArchetype": {
+      "title": "Recursive System Archetype",
+      "description": "The current evolved identity of the HUXLEY engine.",
+      "type": "object",
+      "properties": {
+        "archetype": { "type": "string" },
+        "userId": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["archetype", "userId", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "siphoned_chunks": {
+      "schema": "SiphonedChunk",
+      "description": "Global collection of elite code patterns."
+    },
+    "system_archetypes/{userId}": {
+      "schema": "SystemArchetype",
+      "description": "Per-user evolved engine state."
+    }
+  }
+}

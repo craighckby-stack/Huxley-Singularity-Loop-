@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 1. Global Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // 2. SiphonedChunk Validation
+    function isValidSiphonedChunk(data) {
+      return data.keys().hasAll(['title', 'file', 'code', 'explanation', 'mutation', 'intentAlignmentScore', 'philosophyCheck', 'ccrrScore', 'suggestedBranchName', 'userId', 'createdAt'])
+        && data.keys().size() >= 11
+        && data.title is string && data.title.size() <= 1000
+        && data.file is string && data.file.size() <= 1000
+        && data.code is string && data.code.size() <= 200000
+        && data.userId == request.auth.uid
+        && (data.ccrrScore is number || data.ccrrScore is int)
+        && (data.intentAlignmentScore is number || data.intentAlignmentScore is float)
+        && (!data.keys().hasAny(['isCriticalUpgrade']) || data.isCriticalUpgrade is bool);
+    }
+
+    // 3. SystemArchetype Validation
+    function isValidArchetype(data) {
+      return data.keys().hasAll(['archetype', 'userId', 'updatedAt'])
+        && data.keys().size() == 3
+        && data.archetype is string && data.archetype.size() <= 300000
+        && data.userId == request.auth.uid;
+    }
+
+    // 4. Collection Rules
+    match /siphoned_chunks/{chunkId} {
+      allow create: if isSignedIn() && isValidId(chunkId) && isValidSiphonedChunk(incoming()) && incoming().createdAt == request.time;
+      allow read: if isSignedIn() && isOwner(resource.data.userId);
+      allow delete: if isSignedIn() && isOwner(resource.data.userId);
+      // Updates forbidden to maintain genetic integrity
+    }
+
+    match /system_archetypes/{userId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && isValidArchetype(incoming()) && incoming().updatedAt == request.time;
+      allow update: if isSignedIn() && isOwner(userId) && isValidArchetype(incoming()) && incoming().updatedAt == request.time;
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+  }
+}
