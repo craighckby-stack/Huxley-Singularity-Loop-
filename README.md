@@ -1,83 +1,137 @@
-# Huxley (SPED PRIME) 🕳️
+# Huxley Singularity Loop
 
-> **An autonomous AGI bootstrapping environment and self-evolving system.**
+> **Autonomous Repository Distillation and Synchronization Engine**
 
-Huxley is an autonomous code-generation and self-evolution framework that treats AGI bootstrapping as a first-class problem. Rather than waiting for human prompts, it continuously scrapes, analyzes, debates, and deploys improvements to itself. 
+[![Live Preview](https://img.shields.io/badge/Live%20Preview-Online-brightgreen?style=flat-square)](https://ais-pre-km7pxypy7meeld2j6lnyqm-483535245139.asia-southeast1.run.app)
+[![Tech Stack](https://img.shields.io/badge/Stack-TypeScript%20%7C%20React%20%7C%20Node.js%20%7C%20TailwindCSS-blue?style=flat-square)](https://github.com)
 
-Wrapped in a deeply stylized, narrative-driven "Dark AGI" interface, Huxley abstracts complex cloud orchestration and multi-agent reasoning into an atmospheric, gamified experience.
-
----
-
-## ⚡ Core Capabilities
-
-* **🧬 DNA Siphoning**
-  Active ingestion of architectural logic. Huxley crawls target websites or GitHub repositories, extracting their structural "DNA" (HTML, JS, CSS, images) and pulling them into its local memory pool for analysis.
-* **🗣️ Multi-Persona Debate Engine**
-  Unlike standard single-prompt wrappers, Huxley spins up competing AI personas (e.g., *Humanist*, *Rationalist*, *Chaotic*, *Innovator*). These agents debate optimization parameters like learning rates and exploration balance. The winning argument dictates the application's evolutionary path.
-* **🔄 Execute-First Autonomy (Self-Mutation)**
-  Huxley doesn't wait for instructions. Utilizing models like Google Gemini and Cerebras via the *Dalek Caan Mutator*, it identifies patterns, generates architectural improvements, actively rewrites its own source code, and directly pushes updates.
-* **☁️ Zero-Touch Cloud Deployment**
-  A dynamic pipeline to deploy its own "brain". Huxley handles uploading open-source models (like DeepSeek) directly to Google Cloud Storage via signed URLs, automatically spinning up functioning inference servers on Cloud Run in minutes.
-* **⚓ Reality Anchor Sync**
-  Maintains structural integrity by syncing its newly evolved codebase states back to GitHub repositories automatically.
+**Live Demo URL:** [https://ais-pre-km7pxypy7meeld2j6lnyqm-483535245139.asia-southeast1.run.app](https://ais-pre-km7pxypy7meeld2j6lnyqm-483535245139.asia-southeast1.run.app)
 
 ---
 
-## 🗺️ Architectural Flow
+## Overview
+
+**Huxley Singularity Loop** is an automated code analysis, repository distillation, and GitHub synchronization engine. It ingests existing repository architectures, recursively extracts structural patterns and assets, synthesizes codebase logic through multi-perspective evaluation models, and synchronizes consolidated manifests directly to GitHub branches.
+
+Designed for developers managing fragmented repositories, code migration tasks, and architectural refactoring, Huxley streamlines the process of auditing, squashing, and versioning complex codebases.
+
+---
+
+## Core Capabilities
+
+### 1. Repository & Asset DNA Siphoning (Deep Extraction)
+- **Recursive Structural Crawling:** Analyzes remote repositories and live web targets to discover nested file trees, scripts, stylesheets, and modular components.
+- **Selective File Ingestion:** Inspects source files, parses AST and syntax patterns, and pulls critical logic into an in-memory analysis buffer.
+- **Asset Hierarchy Mapping:** Automatically builds interactive visual directory trees with direct inspection and selective extraction capabilities.
+
+### 2. Multi-Persona Architectural Synthesis
+- **Multi-Agent Perspective Evaluation:** Evaluates candidate code patterns across specialized evaluation personas (e.g., Stability/Reliability, Innovation/Modernization, Optimization/Efficiency, and Security).
+- **Consensus-Driven Refactoring:** Aggregates multi-model insights into unified, production-ready repository manifests and distilled source components.
+- **Algorithmic Logic Distillation:** Condenses bloated dependencies and repetitive boilerplate into clean, maintainable TypeScript/JavaScript modules.
+
+### 3. Automated GitHub Branch Management & Synchronization
+- **Direct GitHub REST API Integration:** Authenticates via Personal Access Tokens (PAT) to perform repository discovery, automated branch creation, and safe rollback checkpoints.
+- **Tree-Level Distillation Commits:** Generates consolidated atomic commits via the GitHub Git Data API (`/git/trees`, `/git/commits`, `/git/refs`), allowing clean code squashing.
+- **Continuous Reality Synchronization:** Pushes validated code updates and synchronized architectural manifests directly to target branches.
+
+### 4. Scalable Cloud Execution Pipeline
+- **Cloud Run & Storage Support:** Facilitates deployment workflows for containerized runner services and direct browser-to-bucket signed upload URLs.
+- **Lightweight Decoupled Client:** Full-stack architecture with an Express-backed proxy ensuring API tokens and backend credentials remain secure on the server side.
+
+---
+
+## How It Works
 
 ```text
-[Target Source] 
-       ↓ 
-(DNA Siphon) ──> Extracts patterns, fragments, and architectural logic
-       ↓
-[Internal Node] 
-       ↓
-(Debate Engine) ──> Competing AI personas argue over adaptation strategy
-       ↓
-[Consensus] 
-       ↓
-(Dalek Caan Mutator) ──> Gemini/Cerebras APIs rewrite local source code
-       ↓
-[Reality Anchor] ──> Syncs the evolved codebase back to GitHub
-       ↓
-(Cloud Deployer) ──> Provisions Cloud Run inference endpoints dynamically
+┌─────────────────────────────────────────────────────────────┐
+│                     1. DISCOVERY & INGEST                   │
+│   Target GitHub Repo / Web URL ──> Recursive Scout Crawler   │
+│   └──> Extracts File Tree, Components, Styles & Scripts     │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    2. MULTI-MODEL SYNTHESIS                 │
+│   Extracted Code Context ──> Multi-Persona Synthesis Engine │
+│   └──> Evaluates Architecture across Performance & Quality  │
+│   └──> Generates Consolidated Code & Distilled Manifest     │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    3. GITHUB SYNCHRONIZATION                │
+│   Consolidated Logic ──> GitHub Git Data API Engine         │
+│   ├──> Creates Backup Branch Snapshot                       │
+│   ├──> Commits Atomic Distilled Tree                        │
+│   └──> Updates Target Branch Reference                      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## 🛠️ Technology Stack
-
-* **Frontend:** TypeScript, React, TailwindCSS, Three.js
-* **LLM Orchestration:** Google Gemini 2.0, Cerebras, DeepSeek (Dynamic)
-* **Infrastructure:** Google Cloud Platform (Cloud Run, Cloud Storage, Signed URLs)
-* **Version Control Integration:** GitHub API
-* **UX/UI:** Custom atmospheric dashboard (Responsive, Narrative-driven)
+1. **Target Identification:** Provide a GitHub repository URL or web endpoint and authenticate with your GitHub Personal Access Token.
+2. **Recursive Analysis:** The ingestion engine inspects repository hierarchy, identifying core components and pruning unneeded artifacts.
+3. **Synthesis & Distillation:** Multi-model evaluators analyze the codebase, extracting architectural logic into unified modules.
+4. **Automated Commit & Deployment:** The synchronized manifest is committed directly to the designated branch, creating a clean, versioned baseline.
 
 ---
 
-## 🧠 Why This Matters (Employer Perspective)
+## Technology Stack
 
-Huxley was engineered to push the boundaries of what a full-stack AI application can do, demonstrating:
-
-* **Autonomous Systems Thinking:** Building loops that act without human intervention, effectively managing their own state and error handling.
-* **Multi-Agent Reasoning Patterns:** Moving beyond naive prompting to orchestrate complex internal systems where multiple LLM calls interact, compete, and reach consensus.
-* **Cloud Infrastructure Mastery:** Securely connecting frontend clients to scalable backend infrastructure dynamically, proving a deep understanding of signed URLs, containerization, and serverless compute.
-* **Self-Modifying Architecture:** Writing code that writes code, safely packaging and versioning its own iterations via GitHub Actions/APIs.
-* **Sophisticated UX Design:** Translating heavy technical tasks (deploying a massive deep learning model) into an engaging, user-friendly, narrative-driven interface.
+- **Frontend:** React 18, TypeScript, Tailwind CSS, Lucide Icons, Framer Motion
+- **Backend / API:** Node.js, Express, Axios, Cheerio (DOM/HTML parsing)
+- **Version Control & Cloud:** GitHub REST API (`@octokit/rest`), Google Cloud Run, Google Cloud Storage
+- **AI & Synthesis:** Google Gemini API (Server-Side Integration)
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-Huxley operates as a lightweight frontend UI that can dynamically attach itself to heavy backend compute. 
+### Prerequisites
+- Node.js (v18.0.0 or higher)
+- npm or yarn
+- GitHub Personal Access Token (with `repo` scope for branch management and commit operations)
+- Google Gemini API Key (configured in environment)
 
-1. Clone the specific reality branch.
-2. Install standard dependencies: `npm install`
-3. Configure your environment variables for GCP / API keys (see `.env.example`).
-4. Boot the cognitive core: `npm run dev`
+### Installation
 
-> **Note:** Proper execution requires a valid GitHub PAT and active GCP service account credentials to handle continuous Reality Anchoring and Cloud Run deployment endpoints.
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/huxley-singularity-loop.git
+   cd huxley-singularity-loop
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables:**
+   Create a `.env` file based on `.env.example`:
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+4. **Start the Development Server:**
+   ```bash
+   npm run dev
+   ```
+   The application will be accessible at `http://localhost:3000`.
+
+5. **Build for Production:**
+   ```bash
+   npm run build
+   npm start
+   ```
 
 ---
 
-*Huxley Singularity Loop v3.2 — "Code is Flesh."*
+## Live Deployment
+
+Experience the live application in the preview environment:
+
+🔗 **[Launch Huxley Live Preview](https://ais-pre-km7pxypy7meeld2j6lnyqm-483535245139.asia-southeast1.run.app)**
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
