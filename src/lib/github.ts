@@ -1,3 +1,10 @@
+/**
+ * DARLEK CANN ARCHITECTURAL HEADER
+ * File: src/lib/github.ts
+ * Role: Core system component participating in autonomous cognitive evolution cycles.
+ * Architecture: Type-safe modular unit with resilient state interfaces.
+ */
+
 
 export interface GitHubRepo {
   owner: { login: string };
@@ -6,8 +13,8 @@ export interface GitHubRepo {
 }
 
 export const ghFetch = async (url: string, token: string, options: RequestInit = {}) => {
-  // Use Bearer for all modern tokens (github_pat or ghp_)
-  // Most GitHub APIs now accept Bearer for all PAT types.
+  // Use <OAUTH_BEARER_TOKEN_REDACTED> all modern tokens (github_pat or ghp_)
+  // Most GitHub APIs now accept <OAUTH_BEARER_TOKEN_REDACTED> all PAT types.
   const authHeader = `Bearer ${token.trim()}`;
   
   const headers: Record<string, string> = {
