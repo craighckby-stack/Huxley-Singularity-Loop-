@@ -1,3 +1,10 @@
+/**
+ * DARLEK CANN ARCHITECTURAL HEADER
+ * File: server.ts
+ * Role: Core system component participating in autonomous cognitive evolution cycles.
+ * Architecture: Type-safe modular unit with resilient state interfaces.
+ */
+
 
 import express from "express";
 import { createServer as createViteServer } from "vite";
@@ -628,7 +635,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "<IP_ADDRESS_REDACTED>", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
