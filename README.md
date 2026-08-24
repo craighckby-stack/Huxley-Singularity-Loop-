@@ -1,46 +1,65 @@
+<!--
+===============================================================================
+HUXLEY SINGULARITY LOOP — SYSTEM ARCHITECTURE & DOCUMENTATION MANIFEST
+-------------------------------------------------------------------------------
+PURPOSE: Core documentation, system capabilities blueprint, execution guide, and 
+         architectural diagnostics map for the Huxley Singularity Loop engine.
+STATUS: SYNTHESIZED
+LINEAGE: Merged original README structure with zero-leak sandboxing, system 
+         diagnostics, multi-agent consensus, and automated GitHub tree sync.
+===============================================================================
+-->
+
 # Huxley Singularity Loop
 
-> **Autonomous Repository Distillation and Synchronization Engine**
+> **Autonomous Repository Distillation, Zero-Leak Sandboxing, and GitHub Synchronization Engine**
 
 [![Live Preview](https://img.shields.io/badge/Live%20Preview-Online-brightgreen?style=flat-square)](https://ais-pre-km7pxypy7meeld2j6lnyqm-483535245139.asia-southeast1.run.app)
-[![Tech Stack](https://img.shields.io/badge/Stack-TypeScript%20%7C%20React%20%7C%20Node.js%20%7C%20TailwindCSS-blue?style=flat-square)](https://github.com)
+[![Tech Stack](https://img.shields.io/badge/Stack-TypeScript%20%7C%20React%2018%20%7C%20Node.js%20%7C%20TailwindCSS-blue?style=flat-square)](https://github.com)
+[![Kernel Health](https://img.shields.io/badge/Kernel-Zero--Leak%20Sandbox%20%7C%20Consensus-purple?style=flat-square)](https://github.com)
+[![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-orange?style=flat-square)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
 **Live Demo URL:** [https://ais-pre-km7pxypy7meeld2j6lnyqm-483535245139.asia-southeast1.run.app](https://ais-pre-km7pxypy7meeld2j6lnyqm-483535245139.asia-southeast1.run.app)
 
 ---
 
-## Overview
+## Executive Overview
 
-**Huxley Singularity Loop** is an automated code analysis, repository distillation, and GitHub synchronization engine. It ingests existing repository architectures, recursively extracts structural patterns and assets, synthesizes codebase logic through multi-perspective evaluation models, and synchronizes consolidated manifests directly to GitHub branches.
+**Huxley Singularity Loop** is an enterprise-grade code analysis, repository distillation, and automated synchronization engine. Engineered for autonomous software evolution, it recursively ingests fragmented repository architectures, isolates and extracts code DNA in zero-leak execution sandboxes, synthesizes logic through multi-persona consensus models, and writes consolidated manifests directly to remote GitHub branches via tree-level atomic commits.
 
-Designed for developers managing fragmented repositories, code migration tasks, and architectural refactoring, Huxley streamlines the process of auditing, squashing, and versioning complex codebases.
-
----
-
-## Core Capabilities
-
-### 1. Repository & Asset DNA Siphoning (Deep Extraction)
-- **Recursive Structural Crawling:** Analyzes remote repositories and live web targets to discover nested file trees, scripts, stylesheets, and modular components.
-- **Selective File Ingestion:** Inspects source files, parses AST and syntax patterns, and pulls critical logic into an in-memory analysis buffer.
-- **Asset Hierarchy Mapping:** Automatically builds interactive visual directory trees with direct inspection and selective extraction capabilities.
-
-### 2. Multi-Persona Architectural Synthesis
-- **Multi-Agent Perspective Evaluation:** Evaluates candidate code patterns across specialized evaluation personas (e.g., Stability/Reliability, Innovation/Modernization, Optimization/Efficiency, and Security).
-- **Consensus-Driven Refactoring:** Aggregates multi-model insights into unified, production-ready repository manifests and distilled source components.
-- **Algorithmic Logic Distillation:** Condenses bloated dependencies and repetitive boilerplate into clean, maintainable TypeScript/JavaScript modules.
-
-### 3. Automated GitHub Branch Management & Synchronization
-- **Direct GitHub REST API Integration:** Authenticates via Personal Access Tokens (PAT) to perform repository discovery, automated branch creation, and safe rollback checkpoints.
-- **Tree-Level Distillation Commits:** Generates consolidated atomic commits via the GitHub Git Data API (`/git/trees`, `/git/commits`, `/git/refs`), allowing clean code squashing.
-- **Continuous Reality Synchronization:** Pushes validated code updates and synchronized architectural manifests directly to target branches.
-
-### 4. Scalable Cloud Execution Pipeline
-- **Cloud Run & Storage Support:** Facilitates deployment workflows for containerized runner services and direct browser-to-bucket signed upload URLs.
-- **Lightweight Decoupled Client:** Full-stack architecture with an Express-backed proxy ensuring API tokens and backend credentials remain secure on the server side.
+Whether migrating massive legacy codebases, pruning dead dependencies, or enforcing security sanitization across distributed systems, Huxley provides a resilient, verifiable, and non-destructive refactoring platform.
 
 ---
 
-## How It Works
+## Architectural Systems & Siphoned Capabilities
+
+### 1. Zero-Leak Sandboxed Code Parsing & Memory Persistence
+- **WeakMap & FinalizationRegistry Isolation:** Prevents memory leaks and scope contamination during multi-pass code parsing by anchoring ephemeral execution state in zero-leak garbage-collected WeakMaps.
+- **Flat-File & Directory Storage:** Maintains long-term state across processing cycles via transactional local file persistence in designated memory spaces.
+
+### 2. Multi-Persona Dynamic Consensus Synthesis
+- **Quad-Persona Evaluation Pipeline:** Evaluates code variations across specialized agent viewpoints:
+  - **Stability & Reliability:** Ensures type-safety, robust error recovery, and zero runtime mutations.
+  - **Innovation & Modernization:** Introduces modern language idioms, clean patterns, and performant structures.
+  - **Optimization & Efficiency:** Prunes boilerplate, optimizes algorithmic complexity, and reduces memory footprints.
+  - **Security & Sanitization:** Audits against secret leaks, injection vectors, and unsafe external imports.
+- **Dynamic Consensus Weighting:** Dynamically balances weighted outputs from each persona based on system confidence metrics before generating the consolidated manifest.
+
+### 3. Multi-Provider LLM Orchestration & Fallback Engine
+- **Resilient Fallback Routing:** Primary integration through Google Gemini with automatic failover orchestration for redundant synthesis.
+- **In-Memory Buffer Management:** Streams token outputs safely through insulated Node.js buffers to prevent stream truncation or memory overflow.
+
+### 4. Real-Time System Diagnostic Engine
+- **Precise Microsecond Telemetry:** Measures memory usage, CPU uptime, environment loading, and sandbox integrity using high-resolution performance hooks.
+- **Self-Healing Diagnostics:** Automatically identifies degraded memory access or missing credentials and returns structured diagnostic reports (`HEALTHY`, `DEGRADED`, `CRITICAL_FAILURE`).
+
+### 5. GitHub Git Data API Tree Synchronization
+- **Atomic Squashing:** Commits newly synthesized file structures via `/git/trees`, `/git/commits`, and `/git/refs` directly, avoiding shallow branch pollution.
+- **Snapshot Rollback Checkpoints:** Automatically creates snapshot tags and branches before executing refactoring passes to allow instant single-click rollbacks.
+
+---
+
+## Execution & Flow Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -51,15 +70,23 @@ Designed for developers managing fragmented repositories, code migration tasks, 
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    2. MULTI-MODEL SYNTHESIS                 │
-│   Extracted Code Context ──> Multi-Persona Synthesis Engine │
-│   └──> Evaluates Architecture across Performance & Quality  │
+│             2. ZERO-LEAK SANDBOX & DIAGNOSTICS              │
+│   In-Memory Ingestion ──> Isolation Buffers & WeakMap Store │
+│   └──> Real-Time Microsecond Telemetry & Health Auditing     │
+└──────────────────────────────┬──────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    3. MULTI-MODEL SYNTHESIS                 │
+│   Extracted Code Context ──> Multi-Persona Consensus Engine │
+│   └──> Evaluates Architecture across Stability, Modernity,  │
+│        Optimization & Security Perspectives                 │
 │   └──> Generates Consolidated Code & Distilled Manifest     │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    3. GITHUB SYNCHRONIZATION                │
+│                    4. GITHUB SYNCHRONIZATION                │
 │   Consolidated Logic ──> GitHub Git Data API Engine         │
 │   ├──> Creates Backup Branch Snapshot                       │
 │   ├──> Commits Atomic Distilled Tree                        │
@@ -67,10 +94,10 @@ Designed for developers managing fragmented repositories, code migration tasks, 
 └─────────────────────────────────────────────────────────────┘
 ```
 
-1. **Target Identification:** Provide a GitHub repository URL or web endpoint and authenticate with your GitHub Personal Access Token.
-2. **Recursive Analysis:** The ingestion engine inspects repository hierarchy, identifying core components and pruning unneeded artifacts.
-3. **Synthesis & Distillation:** Multi-model evaluators analyze the codebase, extracting architectural logic into unified modules.
-4. **Automated Commit & Deployment:** The synchronized manifest is committed directly to the designated branch, creating a clean, versioned baseline.
+1. **Target Identification:** Provide a GitHub repository URL or web endpoint and authenticate via GitHub Personal Access Token (PAT).
+2. **Recursive Isolation:** The ingestion engine inspects repository hierarchy, storing transient AST nodes inside sandboxed memory buffers.
+3. **Consensus Synthesis:** Multi-agent evaluators process extracted components, resolving architectural trade-offs through confidence-weighted scoring.
+4. **Atomic Tree Commit:** Synthesized code is bundled into tree structures and pushed directly to designated target branches with automatic checkpoint snapshots.
 
 ---
 
@@ -89,7 +116,7 @@ Designed for developers managing fragmented repositories, code migration tasks, 
 - Node.js (v18.0.0 or higher)
 - npm or yarn
 - GitHub Personal Access Token (with `repo` scope for branch management and commit operations)
-- Google Gemini API Key (configured in environment)
+- Google Gemini API Key
 
 ### Installation
 
@@ -108,6 +135,7 @@ Designed for developers managing fragmented repositories, code migration tasks, 
    Create a `.env` file based on `.env.example`:
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
+   PORT=3000
    ```
 
 4. **Start the Development Server:**
@@ -134,4 +162,4 @@ Experience the live application in the preview environment:
 
 ## License
 
-CC BY-NC-SA (Attribution-NonCommercial-ShareAlike)
+[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
