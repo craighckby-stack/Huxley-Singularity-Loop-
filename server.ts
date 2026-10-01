@@ -172,8 +172,8 @@ export class SiphonEngine {
     const matches = [...raw.matchAll(patternRegex)];
     
     return matches.map(match => ({
-      title: match[1],
-      mutation: match[2],
+      title: match[1] || "",
+      mutation: match[2] || "",
       ancestry: "pending",
       weight: 0
     }));
@@ -233,7 +233,7 @@ export class RecursiveScout {
         validateStatus: (status) => status === 200
       });
 
-      const $ = cheerio.load(response.data);
+      const $ = cheerio.load(typeof response.data === 'string' ? response.data : String(response.data));
 
       $('link[href], script[src], img[src]').each((_, element) => {
         const src = $(element).attr('src') || $(element).attr('href');
@@ -464,7 +464,8 @@ async function startServer(): Promise<void> {
         timeout: 10000
       });
       
-      const dnaExtraction = siphonEngine.siphon(response.data);
+      const rawPayload = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+      const dnaExtraction = siphonEngine.siphon(rawPayload);
       void dnaExtraction; // Preserved execution reference if needed downstream
 
       const entropySignature = crypto
