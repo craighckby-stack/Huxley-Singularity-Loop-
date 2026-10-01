@@ -15,11 +15,12 @@ export type SiphonResult<T> =
   | { success: true; data: T }
   | { success: false; error: string; entropyLevel: number };
 
-class SiphonEngine {
+export class SiphonEngine {
   private currentGeneration: string = "V3.2_CORE";
   private static readonly MAX_PAYLOAD_LENGTH = 1_048_576; // 1MB bounds limit
   private static readonly MAX_MATCHES_LIMIT = 10_000;
   private static readonly MAX_FIELD_LENGTH = 1_024;
+  private static readonly PATTERN_REGEX = /\[PATTERN: (.*?), STRATEGY: (.*?)\]/g;
 
   /**
    * Siphons logic-DNA from raw source buffers.
@@ -48,7 +49,7 @@ class SiphonEngine {
     }
   }
 
-  private validatePayload(payload: string): SiphonResult<DNAFragment[]> | null {
+  private validatePayload(payload: unknown): SiphonResult<DNAFragment[]> | null {
     if (typeof payload !== "string") {
       return { success: false, error: "INVALID_PAYLOAD_TYPE", entropyLevel: 0.99 };
     }
@@ -66,17 +67,29 @@ class SiphonEngine {
 
   private stampFragments(fragments: DNAFragment[]): DNAFragment[] {
     const timestamp = Date.now();
-    return fragments.map(fragment => ({
-      ...fragment,
-      ancestry: `${this.currentGeneration}::${timestamp}`,
-      weight: this.calculateInitialWeight(fragment)
-    }));
+    const ancestry = `${this.currentGeneration}::${timestamp}`;
+    const len = fragments.length;
+    const stampedFragments: DNAFragment[] = new Array(len);
+
+    for (let i = 0; i < len; i++) {
+      const fragment = fragments[i];
+      stampedFragments[i] = {
+        title: fragment.title,
+        mutation: fragment.mutation,
+        ancestry,
+        weight: this.calculateInitialWeight(fragment)
+      };
+    }
+
+    return stampedFragments;
   }
 
   private parseDNA(raw: string): DNAFragment[] {
     // Implementation of Deterministic AST Weighting logic would reside here
     // Currently siphoning specific PATTERN/STRATEGY blocks
-    const patternRegex = /\[PATTERN: (.*?), STRATEGY: (.*?)\]/g;
+    const patternRegex = SiphonEngine.PATTERN_REGEX;
+    patternRegex.lastIndex = 0;
+
     const fragments: DNAFragment[] = [];
     let match: RegExpExecArray | null;
     let matchCount = 0;
