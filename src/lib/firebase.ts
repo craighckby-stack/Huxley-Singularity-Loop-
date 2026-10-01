@@ -25,10 +25,14 @@ export interface FirebaseErrorInfo {
     email: string;
     emailVerified: boolean;
     isAnonymous: boolean;
-  }
+  };
 }
 
-export const handleFirestoreError = (error: unknown, operationType: FirebaseErrorInfo['operationType'], path: string | null): never => {
+export const handleFirestoreError = (
+  error: unknown,
+  operationType: FirebaseErrorInfo['operationType'],
+  path: string | null
+): never => {
   const user = auth.currentUser;
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorInfo: FirebaseErrorInfo = {
@@ -39,8 +43,8 @@ export const handleFirestoreError = (error: unknown, operationType: FirebaseErro
       userId: user?.uid || 'anonymous',
       email: user?.email || 'none',
       emailVerified: user?.emailVerified || false,
-      isAnonymous: user?.isAnonymous ?? true
-    }
+      isAnonymous: user?.isAnonymous ?? true,
+    },
   };
   throw new Error(JSON.stringify(errorInfo));
 };
@@ -50,7 +54,12 @@ const sanitizeString = (val: unknown, maxLength: number = 50000): string => {
   return val.slice(0, maxLength);
 };
 
-const sanitizeNumber = (val: unknown, min: number = -1e9, max: number = 1e9, defaultVal: number = 0): number => {
+const sanitizeNumber = (
+  val: unknown,
+  min: number = -1e9,
+  max: number = 1e9,
+  defaultVal: number = 0
+): number => {
   if (typeof val !== 'number' || Number.isNaN(val)) return defaultVal;
   return Math.max(min, Math.min(max, val));
 };
@@ -63,7 +72,7 @@ export const saveSiphonedChunk = async (chunk: Chunk): Promise<void> => {
 
   try {
     const chunkRef = collection(db, 'siphoned_chunks');
-    
+
     const data: Record<string, unknown> = {
       title: sanitizeString(chunk.title, 500),
       file: sanitizeString(chunk.file, 1000),
@@ -75,7 +84,7 @@ export const saveSiphonedChunk = async (chunk: Chunk): Promise<void> => {
       ccrrScore: sanitizeNumber(chunk.ccrrScore, 0, 100, 0),
       suggestedBranchName: sanitizeString(chunk.suggestedBranchName, 200),
       userId: auth.currentUser.uid,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
     };
 
     if (chunk.isCriticalUpgrade !== undefined) {
@@ -91,9 +100,15 @@ export const saveSiphonedChunk = async (chunk: Chunk): Promise<void> => {
 export const getSiphonedChunks = async (): Promise<any[]> => {
   if (!auth.currentUser) return [];
   try {
-    const q = query(collection(db, 'siphoned_chunks'), where('userId', '==', auth.currentUser.uid));
+    const q = query(
+      collection(db, 'siphoned_chunks'),
+      where('userId', '==', auth.currentUser.uid)
+    );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(docSnapshot => ({ id: docSnapshot.id, ...docSnapshot.data() } as any));
+    return snapshot.docs.map((docSnapshot) => ({
+      id: docSnapshot.id,
+      ...docSnapshot.data(),
+    })) as any[];
   } catch (e) {
     handleFirestoreError(e, 'list', 'siphoned_chunks');
   }
@@ -107,7 +122,7 @@ export const saveArchetype = async (archetype: string): Promise<void> => {
     await setDoc(docRef, {
       archetype: sanitizedArchetype,
       userId: auth.currentUser.uid,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
   } catch (e) {
     handleFirestoreError(e, 'update', `system_archetypes/${auth.currentUser.uid}`);
