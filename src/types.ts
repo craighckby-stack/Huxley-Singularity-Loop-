@@ -42,17 +42,24 @@ export interface Chunk {
 // ============================================================================
 
 /**
+ * Runtime validation guard for SanitizedString
+ */
+export function isValidSanitizedString(value: unknown): value is SanitizedString {
+  return typeof value === 'string' && value.length >= 0 && !/[\0\x08\x0B\x0C\x0E-\x1F]/.test(value);
+}
+
+/**
  * Runtime validation guard for BoundedProbability
  */
 export function isValidProbability(value: unknown): value is BoundedProbability {
-  return typeof value === 'number' && !Number.isNaN(value) && value >= 0 && value <= 1;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
 }
 
 /**
  * Runtime validation guard for BoundedScore
  */
 export function isValidScore(value: unknown): value is BoundedScore {
-  return typeof value === 'number' && !Number.isNaN(value) && value >= 0 && value <= 100;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100;
 }
 
 /**
@@ -61,7 +68,7 @@ export function isValidScore(value: unknown): value is BoundedScore {
 export function isValidMemoryLimit(value: unknown): value is BoundedMemoryLimit {
   return (
     typeof value === 'number' &&
-    !Number.isNaN(value) &&
+    Number.isFinite(value) &&
     Number.isInteger(value) &&
     value >= 1 &&
     value <= 1048576
