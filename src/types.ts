@@ -16,4 +16,8 @@ export interface Chunk {
   ccrrScore: number;
   suggestedBranchName: string;
   isCriticalUpgrade?: boolean;
+  /** Cryptographic hash or checksum for memory safety and integrity validation */
+  checksum?: string;
+  /** Bounded memory allocation limit for payload deserialization */
+  maxPayloadSize?: number;
 }
