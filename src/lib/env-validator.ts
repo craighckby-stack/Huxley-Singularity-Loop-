@@ -31,9 +31,10 @@ export interface ValidationResult {
 }
 
 // Defensive URL validation pattern to prevent malformed or injection vectors
-const URL_PATTERN = /^https?:\/\/[^\s$.?#].[^\s]*$/i;
+const URL_PATTERN = /^https?:\/\/[^\s$.?#].[^\s]{0,2048}$/i;
 // Safe path validation pattern to restrict path traversal and injection
-const PATH_PATTERN = /^[a-zA-Z0-9_\-\./]+$/;
+const PATH_PATTERN = /^[a-zA-Z0-9_\-\./]{1,256}$/;
+const MAX_KEY_LENGTH = 512;
 
 const DEFAULT_APP_URL = 'http://localhost:3000';
 const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434';
@@ -69,7 +70,7 @@ function sanitizeUrl(
   if (!trimmedUrl) {
     return defaultUrl;
   }
-  if (!URL_PATTERN.test(trimmedUrl)) {
+  if (trimmedUrl.length > 2048 || !URL_PATTERN.test(trimmedUrl)) {
     warnings.push(warningMessage);
     return defaultUrl;
   }
@@ -100,8 +101,8 @@ function sanitizePath(rawPath: string | undefined, warnings: string[]): string {
   if (!trimmedPath) {
     return DEFAULT_MEMORY_PATH;
   }
-  if (!PATH_PATTERN.test(trimmedPath)) {
-    warnings.push('MEMORY_PERSISTENCE_PATH contains disallowed characters; falling back to default.');
+  if (trimmedPath.length > 256 || !PATH_PATTERN.test(trimmedPath) || trimmedPath.includes('..')) {
+    warnings.push('MEMORY_PERSISTENCE_PATH contains disallowed characters or traversal vectors; falling back to default.');
     return DEFAULT_MEMORY_PATH;
   }
   return trimmedPath;
@@ -112,6 +113,14 @@ function parseLogLevel(rawLevel: string | undefined): EnvConfig['logLevel'] {
   return VALID_LOG_LEVELS.includes(trimmedLevel) ? trimmedLevel : DEFAULT_LOG_LEVEL;
 }
 
+function sanitizeApiKey(rawValue: string | undefined): string | undefined {
+  const trimmed = rawValue?.trim();
+  if (!trimmed || trimmed.length > MAX_KEY_LENGTH) {
+    return undefined;
+  }
+  return trimmed;
+}
+
 export function validateEnvironment(
   env: Record<string, string | undefined> = process.env
 ): ValidationResult {
@@ -119,8 +128,8 @@ export function validateEnvironment(
   const warnings: string[] = [];
   const activeProviders: string[] = [];
 
-  // Primary Required Keys with null/empty/placeholder string sanitation
-  const geminiKey = env.GEMINI_API_KEY?.trim();
+  // Primary Required Keys with null/empty/placeholder string sanitation and length bounds
+  const geminiKey = sanitizeApiKey(env.GEMINI_API_KEY);
   if (!geminiKey || geminiKey === 'MY_GEMINI_API_KEY') {
     missingRequired.push('GEMINI_API_KEY');
   } else {
@@ -131,7 +140,7 @@ export function validateEnvironment(
   const optionalConfigValues: Partial<EnvConfig> = {};
 
   for (const provider of OPTIONAL_PROVIDERS) {
-    const providerValue = env[provider.envKey]?.trim();
+    const providerValue = sanitizeApiKey(env[provider.envKey]);
     if (providerValue) {
       activeProviders.push(provider.providerName);
       optionalConfigValues[provider.key] = providerValue as any;
