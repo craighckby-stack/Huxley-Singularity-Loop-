@@ -15,14 +15,31 @@ export interface ProviderWeightMap {
   local: number;
 }
 
+/**
+ * Validates, bounds-checks, and parses a numeric weight from an environment variable string.
+ * Clamps output strictly between 0 and 1, defaulting to fallback if invalid or NaN.
+ */
+function parseAndClampWeight(value: string | undefined, fallback: number): number {
+  if (value === undefined || value.trim() === '') {
+    return fallback;
+  }
+  const parsed = parseFloat(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  if (parsed < 0) return 0;
+  if (parsed > 1) return 1;
+  return parsed;
+}
+
 export function parseConsensusWeights(env: Record<string, string | undefined> = process.env): ProviderWeightMap {
   return {
-    gemini: parseFloat(env.CONSENSUS_WEIGHT_GEMINI || '0.95'),
-    anthropic: parseFloat(env.CONSENSUS_WEIGHT_ANTHROPIC || '0.90'),
-    deepseek: parseFloat(env.CONSENSUS_WEIGHT_DEEPSEEK || '0.85'),
-    xai: parseFloat(env.CONSENSUS_WEIGHT_XAI || '0.80'),
-    cerebras: parseFloat(env.CONSENSUS_WEIGHT_CEREBRAS || '0.75'),
-    groq: parseFloat(env.CONSENSUS_WEIGHT_GROQ || '0.70'),
-    local: parseFloat(env.CONSENSUS_WEIGHT_LOCAL || '0.60'),
+    gemini: parseAndClampWeight(env.CONSENSUS_WEIGHT_GEMINI, 0.95),
+    anthropic: parseAndClampWeight(env.CONSENSUS_WEIGHT_ANTHROPIC, 0.90),
+    deepseek: parseAndClampWeight(env.CONSENSUS_WEIGHT_DEEPSEEK, 0.85),
+    xai: parseAndClampWeight(env.CONSENSUS_WEIGHT_XAI, 0.80),
+    cerebras: parseAndClampWeight(env.CONSENSUS_WEIGHT_CEREBRAS, 0.75),
+    groq: parseAndClampWeight(env.CONSENSUS_WEIGHT_GROQ, 0.70),
+    local: parseAndClampWeight(env.CONSENSUS_WEIGHT_LOCAL, 0.60),
   };
 }
