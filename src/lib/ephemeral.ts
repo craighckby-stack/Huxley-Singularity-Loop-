@@ -21,8 +21,8 @@ const PRESSURE_MULTIPLIER_NORMAL = 1;
 type PurgeReason = 'PRESSURE_CULL' | 'EXPIRATION' | '';
 
 interface PurgeEvaluation {
-  shouldPurge: boolean;
-  reason: PurgeReason;
+  readonly shouldPurge: boolean;
+  readonly reason: PurgeReason;
 }
 
 export class EphemeralStorage {
