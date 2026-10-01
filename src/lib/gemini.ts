@@ -69,17 +69,17 @@ function parseChunkResults(text: string): Chunk[] {
   }
 }
 
-export const analyzeRepoChunks = async (
-  context: string, 
-  intentAnchor: string | null, 
-  runningArchetype: string | null, 
+const createRepoAnalysisPrompt = (
+  context: string,
+  intentAnchor: string | null,
+  runningArchetype: string | null,
   memoryContext: string
-): Promise<Chunk[]> => {
+): string => {
   const archetypeContext = runningArchetype 
     ? `RECURSIVE SYSTEM ARCHETYPE (Current Evolved Identity): \n${runningArchetype}`
     : "SYSTEM DEFAULT: HUXLEY_REASONING_ENGINE_V3.2";
 
-  const prompt = `You are the HYPER-RECURSIVE HUXLEY ENGINE (v3.2). Your mission is to siphon, distill, and evolve code architecture across parallel repositories.
+  return `You are the HYPER-RECURSIVE HUXLEY ENGINE (v3.2). Your mission is to siphon, distill, and evolve code architecture across parallel repositories.
 
 ${archetypeContext}
 
@@ -111,36 +111,45 @@ FORMATTING REQUIREMENTS:
 REPOSITORY CONTEXT TO ANALYZE:
 ${context}
 `;
+};
 
-  const schema = {
-    type: Type.ARRAY,
-    items: {
-      type: Type.OBJECT,
-      properties: {
-        title: { type: Type.STRING },
-        file: { type: Type.STRING },
-        code: { type: Type.STRING },
-        explanation: { type: Type.STRING },
-        mutation: { type: Type.STRING },
-        intentAlignmentScore: { type: Type.NUMBER },
-        philosophyCheck: { type: Type.STRING },
-        ccrrScore: { type: Type.NUMBER },
-        suggestedBranchName: { type: Type.STRING },
-        isCriticalUpgrade: { type: Type.BOOLEAN }
-      },
-      required: [
-        "title", 
-        "file", 
-        "code", 
-        "explanation", 
-        "mutation", 
-        "intentAlignmentScore", 
-        "philosophyCheck", 
-        "ccrrScore", 
-        "suggestedBranchName"
-      ]
-    }
-  };
+const repoAnalysisSchema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING },
+      file: { type: Type.STRING },
+      code: { type: Type.STRING },
+      explanation: { type: Type.STRING },
+      mutation: { type: Type.STRING },
+      intentAlignmentScore: { type: Type.NUMBER },
+      philosophyCheck: { type: Type.STRING },
+      ccrrScore: { type: Type.NUMBER },
+      suggestedBranchName: { type: Type.STRING },
+      isCriticalUpgrade: { type: Type.BOOLEAN }
+    },
+    required: [
+      "title", 
+      "file", 
+      "code", 
+      "explanation", 
+      "mutation", 
+      "intentAlignmentScore", 
+      "philosophyCheck", 
+      "ccrrScore", 
+      "suggestedBranchName"
+    ]
+  }
+};
+
+export const analyzeRepoChunks = async (
+  context: string, 
+  intentAnchor: string | null, 
+  runningArchetype: string | null, 
+  memoryContext: string
+): Promise<Chunk[]> => {
+  const prompt = createRepoAnalysisPrompt(context, intentAnchor, runningArchetype, memoryContext);
 
   const executePipeline = async (): Promise<Chunk[]> => {
     return await fetchWithExponentialBackoff(async () => {
@@ -152,7 +161,7 @@ ${context}
         contents: prompt,
         config: {
           responseMimeType: "application/json",
-          responseSchema: schema,
+          responseSchema: repoAnalysisSchema,
           tools: [{ googleSearch: {} }]
         }
       });
