@@ -20,10 +20,14 @@ export interface ProviderWeightMap {
  * Clamps output strictly between 0 and 1, defaulting to fallback if invalid or NaN.
  */
 function parseAndClampWeight(value: string | undefined, fallback: number): number {
-  if (value === undefined || value.trim() === '') {
+  if (value === undefined || value === null) {
     return fallback;
   }
-  const parsed = parseFloat(value);
+  const trimmed = String(value).trim();
+  if (trimmed === '') {
+    return fallback;
+  }
+  const parsed = Number(trimmed);
   if (!Number.isFinite(parsed)) {
     return fallback;
   }
