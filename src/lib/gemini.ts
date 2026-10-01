@@ -13,7 +13,7 @@ const DEFAULT_INITIAL_DELAY_MS = 1000;
 const PIPELINE_TIMEOUT_MS = 90000;
 const MODEL_NAME = "gemini-3-flash-preview";
 
-interface GroundingSource {
+export interface GroundingSource {
   title: string;
   uri: string;
 }
@@ -60,10 +60,10 @@ function parseChunkResults(text: string): Chunk[] {
   try {
     return JSON.parse(text);
   } catch {
-    const start = text.indexOf('[');
-    const end = text.lastIndexOf(']');
-    if (start !== -1 && end !== -1) {
-      return JSON.parse(text.substring(start, end + 1));
+    const startIndex = text.indexOf('[');
+    const endIndex = text.lastIndexOf(']');
+    if (startIndex !== -1 && endIndex !== -1) {
+      return JSON.parse(text.substring(startIndex, endIndex + 1));
     }
     return [];
   }
@@ -206,7 +206,7 @@ export const generatePerspective = async (
     
     const sources = response.candidates?.[0]?.groundingMetadata?.searchEntryPoint ? [{
       title: "Google Search Knowledge Base",
-      uri: "https://www.google.com/search?q=" + encodeURIComponent(topic)
+      uri: `https://www.google.com/search?q=${encodeURIComponent(topic)}`
     }] : [];
 
     return {
