@@ -299,9 +299,13 @@ export interface DNA {
 export class EphemeralStorage {
   private state = new Map<string, DNA>();
   private manualPressure: number = 0;
+  private decayTimer: NodeJS.Timeout;
 
   constructor() {
-    setInterval(() => this.applyDecay(), 20000);
+    this.decayTimer = setInterval(() => this.applyDecay(), 20000);
+    if (typeof this.decayTimer.unref === 'function') {
+      this.decayTimer.unref();
+    }
   }
 
   private calculateSystemicDensity(): number {
