@@ -26,6 +26,10 @@ export const ghFetch = async (url: string, token: string, options: RequestInit =
     throw new Error("Authentication Error: GitHub token is required.");
   }
 
+  if (typeof url !== 'string' || !url.startsWith('https://api.github.com/')) {
+    throw new Error("Security Error: Invalid or untrusted request URL endpoint.");
+  }
+
   const authHeader = `Bearer ${token.trim()}`;
   
   const headers: Record<string, string> = {
@@ -131,9 +135,11 @@ export const getBranches = async (owner: string, repo: string, token: string) =>
 export const createBranch = async (owner: string, repo: string, newBranch: string, baseBranch: string, token: string) => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
-  console.log(`[createBranch] Creating [${newBranch}] from [${baseBranch}]`);
+  const safeNewBranch = sanitizeSegment(newBranch, 'newBranch');
+  const safeBaseBranch = sanitizeSegment(baseBranch, 'baseBranch');
+  console.log(`[createBranch] Creating [${safeNewBranch}] from [${safeBaseBranch}]`);
   
-  const encodedBase = encodeURIComponent(baseBranch);
+  const encodedBase = encodeURIComponent(safeBaseBranch);
   const baseRes = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/commits/${encodedBase}`, token);
   const baseData = await baseRes.json();
   const sha = baseData.sha;
@@ -142,7 +148,7 @@ export const createBranch = async (owner: string, repo: string, newBranch: strin
     const res = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/git/refs`, token, {
       method: 'POST',
       body: JSON.stringify({
-        ref: `refs/heads/${newBranch}`,
+        ref: `refs/heads/${safeNewBranch}`,
         sha
       })
     });
@@ -165,9 +171,10 @@ export const createBranch = async (owner: string, repo: string, newBranch: strin
 export const distillRepository = async (owner: string, repo: string, readmeContent: string, token: string, branch: string) => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
-  console.log(`[distillRepository] Distilling [${branch}]`);
+  const safeBranch = sanitizeSegment(branch, 'branch');
+  console.log(`[distillRepository] Distilling [${safeBranch}]`);
   
-  const encodedBranch = encodeURIComponent(branch);
+  const encodedBranch = encodeURIComponent(safeBranch);
   const commitRes = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/commits/${encodedBranch}`, token);
   const commitData = await commitRes.json();
   const parentSha = commitData.sha;
@@ -206,7 +213,7 @@ export const distillRepository = async (owner: string, repo: string, readmeConte
   });
   const finalCommitData = await finalCommitRes.json();
 
-  const encodedRef = encodeURIComponent(branch);
+  const encodedRef = encodeURIComponent(safeBranch);
   const updateRes = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/git/refs/heads/${encodedRef}`, token, {
     method: 'PATCH',
     body: JSON.stringify({
@@ -220,11 +227,13 @@ export const distillRepository = async (owner: string, repo: string, readmeConte
 export const renameBranch = async (owner: string, repo: string, oldBranch: string, newName: string, token: string) => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
-  console.log(`[renameBranch] Renaming [${oldBranch}] to [${newName}]`);
-  const encodedBranch = encodeURIComponent(oldBranch);
+  const safeOldBranch = sanitizeSegment(oldBranch, 'oldBranch');
+  const safeNewName = sanitizeSegment(newName, 'newName');
+  console.log(`[renameBranch] Renaming [${safeOldBranch}] to [${safeNewName}]`);
+  const encodedBranch = encodeURIComponent(safeOldBranch);
   const res = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/branches/${encodedBranch}/rename`, token, {
     method: 'POST',
-    body: JSON.stringify({ new_name: newName })
+    body: JSON.stringify({ new_name: safeNewName })
   });
   return res.json();
 };
@@ -232,8 +241,9 @@ export const renameBranch = async (owner: string, repo: string, oldBranch: strin
 export const deleteBranch = async (owner: string, repo: string, branch: string, token: string) => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
-  console.log(`[deleteBranch] Deleting [${branch}]`);
-  const encodedRef = encodeURIComponent(branch);
+  const safeBranch = sanitizeSegment(branch, 'branch');
+  console.log(`[deleteBranch] Deleting [${safeBranch}]`);
+  const encodedRef = encodeURIComponent(safeBranch);
   const res = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/git/refs/heads/${encodedRef}`, token, {
     method: 'DELETE'
   });
@@ -254,8 +264,9 @@ export const updateRepoVisibility = async (owner: string, repo: string, isPrivat
 export const protectBranch = async (owner: string, repo: string, branch: string, token: string) => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
-  console.log(`[protectBranch] Protecting [${branch}]`);
-  const encodedBranch = encodeURIComponent(branch);
+  const safeBranch = sanitizeSegment(branch, 'branch');
+  console.log(`[protectBranch] Protecting [${safeBranch}]`);
+  const encodedBranch = encodeURIComponent(safeBranch);
   const res = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/branches/${encodedBranch}/protection`, token, {
     method: 'PUT',
     body: JSON.stringify({
