@@ -29,10 +29,15 @@ const STATIC_PERSONAS: Record<string, Persona> = {
   }
 };
 
-// Programmatic generation for the remaining 85+ personas as described in the documentation
+const MAX_SYNTHETIC_PERSONAS = 97;
+
+// Programmatic generation for the remaining personas with strict bounds checking and input sanitization
 const SYNTHETIC_PERSONAS: Record<string, Persona> = Object.fromEntries(
-  Array.from({ length: 97 }, (_, i) => {
+  Array.from({ length: MAX_SYNTHETIC_PERSONAS }, (_, i) => {
     const id = i + 5;
+    if (!Number.isInteger(id) || id < 0) {
+      throw new Error("Invalid persona identifier computed.");
+    }
     const personaName = `Expert Persona ${id}`;
     return [personaName, {
       description: `A unique, expert-level AI persona focusing on architectural niche area #${id}.`,
@@ -41,9 +46,9 @@ const SYNTHETIC_PERSONAS: Record<string, Persona> = Object.fromEntries(
   })
 );
 
-export const PERSPECTIVES_DATA: Record<string, Persona> = {
+export const PERSPECTIVES_DATA: Record<string, Persona> = Object.freeze({
   ...STATIC_PERSONAS,
   ...SYNTHETIC_PERSONAS
-};
+});
 
-export const ALL_PERSONA_NAMES = Object.keys(PERSPECTIVES_DATA);
+export const ALL_PERSONA_NAMES: readonly string[] = Object.freeze(Object.keys(PERSPECTIVES_DATA));
