@@ -11,8 +11,10 @@ export interface Chunk {
   code: string;
   explanation: string;
   mutation: string;
+  /** Bounded between 0 and 1 inclusive for strict probabilistic alignment validation */
   intentAlignmentScore: number;
   philosophyCheck: string;
+  /** Bounded between 0 and 100 inclusive for numeric bounds integrity */
   ccrrScore: number;
   suggestedBranchName: string;
   isCriticalUpgrade?: boolean;
