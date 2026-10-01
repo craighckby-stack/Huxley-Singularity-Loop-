@@ -18,14 +18,14 @@ export interface Chunk {
   explanation: string;
   mutation: string;
   /** Bounded between 0 and 1 inclusive for strict probabilistic alignment validation */
-  intentAlignmentScore: number;
+  intentAlignmentScore: BoundedProbability;
   philosophyCheck: string;
   /** Bounded between 0 and 100 inclusive for numeric bounds integrity */
-  ccrrScore: number;
+  ccrrScore: BoundedScore;
   suggestedBranchName: string;
   isCriticalUpgrade?: boolean;
   /** Cryptographic hash or checksum for memory safety and integrity validation */
   checksum?: string;
   /** Bounded memory allocation limit for payload deserialization */
-  maxPayloadSize?: number;
+  maxPayloadSize?: BoundedMemoryLimit;
 }
