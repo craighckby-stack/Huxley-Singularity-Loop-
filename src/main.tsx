@@ -11,18 +11,18 @@ import App from './App';
 import './index.css';
 
 /**
- * Validates the existence of the root mount element in the DOM.
+ * Validates the existence and type integrity of the root mount element in the DOM.
  */
 function getRootContainer(): HTMLElement {
   const rootElement = document.getElementById('root');
-  if (!rootElement) {
-    throw new Error('Fatal: Root container element with ID "root" not found in DOM.');
+  if (!rootElement || !(rootElement instanceof HTMLElement)) {
+    throw new Error('Fatal: Root container element with ID "root" not found in DOM or invalid type.');
   }
   return rootElement;
 }
 
 /**
- * Renders a fallback DOM element if application initialization fails.
+ * Renders a fallback DOM element safely if application initialization fails, avoiding innerHTML injection.
  */
 function renderInitializationError(error: unknown): void {
   const message = error instanceof Error ? error.message : String(error);
