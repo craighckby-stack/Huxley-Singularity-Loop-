@@ -6,11 +6,11 @@
  */
 
 export interface Persona {
-  description: string;
-  promptModifier: string;
+  readonly description: string;
+  readonly promptModifier: string;
 }
 
-const STATIC_PERSONAS: Record<string, Persona> = {
+const STATIC_PERSONAS: Readonly<Record<string, Persona>> = {
   "First Principles Physicist": {
     description: "Applies first-principles physics reasoning to decompose complex systems into fundamental truths.",
     promptModifier: "Provide a deep, comprehensive analysis of the topic from the perspective of a 'First Principles Physicist'. The response must be approximately 250 lines long. Do not use markdown headers, lists, or formatting like bolding or italics, just continuous, flowing prose to maximize length."
@@ -46,7 +46,7 @@ const SYNTHETIC_PERSONAS: Record<string, Persona> = Object.fromEntries(
   })
 );
 
-export const PERSPECTIVES_DATA: Record<string, Persona> = Object.freeze({
+export const PERSPECTIVES_DATA: Readonly<Record<string, Persona>> = Object.freeze({
   ...STATIC_PERSONAS,
   ...SYNTHETIC_PERSONAS
 });
