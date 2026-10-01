@@ -59,7 +59,12 @@ const OPTIONAL_PROVIDERS: readonly ProviderMapping[] = [
   { key: 'ollamaBaseUrl', envKey: 'OLLAMA_BASE_URL', providerName: 'ollama' },
 ];
 
-function sanitizeUrl(rawUrl: string | undefined, defaultUrl: string, warningMessage: string, warnings: string[]): string {
+function sanitizeUrl(
+  rawUrl: string | undefined,
+  defaultUrl: string,
+  warningMessage: string,
+  warnings: string[]
+): string {
   const trimmedUrl = rawUrl?.trim();
   if (!trimmedUrl) {
     return defaultUrl;
@@ -107,7 +112,9 @@ function parseLogLevel(rawLevel: string | undefined): EnvConfig['logLevel'] {
   return VALID_LOG_LEVELS.includes(trimmedLevel) ? trimmedLevel : DEFAULT_LOG_LEVEL;
 }
 
-export function validateEnvironment(env: Record<string, string | undefined> = process.env): ValidationResult {
+export function validateEnvironment(
+  env: Record<string, string | undefined> = process.env
+): ValidationResult {
   const missingRequired: string[] = [];
   const warnings: string[] = [];
   const activeProviders: string[] = [];
