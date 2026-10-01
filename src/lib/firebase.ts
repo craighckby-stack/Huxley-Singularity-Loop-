@@ -51,7 +51,7 @@ export const handleFirestoreError = (
 
 const sanitizeString = (val: unknown, maxLength: number = 50000): string => {
   if (typeof val !== 'string') return '';
-  return val.slice(0, maxLength);
+  return val.slice(0, Math.max(0, maxLength));
 };
 
 const sanitizeNumber = (
