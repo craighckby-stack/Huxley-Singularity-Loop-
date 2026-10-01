@@ -56,8 +56,7 @@ export function parseConsensusWeights(
 ): ProviderWeightMap {
   const result: ProviderWeightMap = { ...DEFAULT_WEIGHTS };
 
-  for (let i = 0; i < PROVIDER_ENV_KEYS.length; i++) {
-    const [provider, envKey] = PROVIDER_ENV_KEYS[i];
+  for (const [provider, envKey] of PROVIDER_ENV_KEYS) {
     result[provider] = parseAndClampWeight(env[envKey], DEFAULT_WEIGHTS[provider]);
   }
 
