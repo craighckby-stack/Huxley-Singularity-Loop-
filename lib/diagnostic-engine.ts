@@ -13,7 +13,7 @@ export interface DiagnosticCheckResult {
   passed: boolean;
   duration_ms: number;
   message?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface DiagnosticReport {
