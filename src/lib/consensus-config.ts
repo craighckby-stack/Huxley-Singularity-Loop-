@@ -15,7 +15,7 @@ export interface ProviderWeightMap {
   local: number;
 }
 
-const DEFAULT_WEIGHTS: Readonly<ProviderWeightMap> = {
+export const DEFAULT_WEIGHTS: Readonly<ProviderWeightMap> = {
   gemini: 0.95,
   anthropic: 0.90,
   deepseek: 0.85,
@@ -25,12 +25,16 @@ const DEFAULT_WEIGHTS: Readonly<ProviderWeightMap> = {
   local: 0.60,
 } as const;
 
+const PROVIDER_ENV_KEYS: ReadonlyArray<readonly [keyof ProviderWeightMap, string]> = (
+  Object.keys(DEFAULT_WEIGHTS) as (keyof ProviderWeightMap)[]
+).map((provider) => [provider, `CONSENSUS_WEIGHT_${provider.toUpperCase()}`] as const);
+
 /**
  * Validates, bounds-checks, and parses a numeric weight from an environment variable string.
  * Clamps output strictly between 0 and 1, defaulting to fallback if invalid or NaN.
  */
 function parseAndClampWeight(value: string | undefined, fallback: number): number {
-  if (value === undefined || value === null) {
+  if (value === undefined || value === null || typeof value !== 'string') {
     return fallback;
   }
   
@@ -47,12 +51,15 @@ function parseAndClampWeight(value: string | undefined, fallback: number): numbe
   return Math.min(Math.max(parsed, 0), 1);
 }
 
-export function parseConsensusWeights(env: Record<string, string | undefined> = process.env): ProviderWeightMap {
-  const providers = Object.keys(DEFAULT_WEIGHTS) as (keyof ProviderWeightMap)[];
-  
-  return providers.reduce((acc, provider) => {
-    const envKey = `CONSENSUS_WEIGHT_${provider.toUpperCase()}`;
-    acc[provider] = parseAndClampWeight(env[envKey], DEFAULT_WEIGHTS[provider]);
-    return acc;
-  }, {} as ProviderWeightMap);
+export function parseConsensusWeights(
+  env: Record<string, string | undefined> = typeof process !== 'undefined' && process.env ? process.env : {}
+): ProviderWeightMap {
+  const result: ProviderWeightMap = { ...DEFAULT_WEIGHTS };
+
+  for (let i = 0; i < PROVIDER_ENV_KEYS.length; i++) {
+    const [provider, envKey] = PROVIDER_ENV_KEYS[i];
+    result[provider] = parseAndClampWeight(env[envKey], DEFAULT_WEIGHTS[provider]);
+  }
+
+  return result;
 }
