@@ -90,7 +90,7 @@ const parseAIResponse = (text: string): Chunk[] => {
   }
 };
 
-const requestAIProxy = async (endpoint: string, prompt: string, suffix: string): Promise<any | null> => {
+const requestAIProxy = async (endpoint: string, prompt: string, suffix: string): Promise<unknown | null> => {
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -118,7 +118,7 @@ const requestAIProxy = async (endpoint: string, prompt: string, suffix: string):
   }
 };
 
-export const callFallbackAI = async (prompt: string, config: FallbackConfig): Promise<Chunk[]> => {
+export const callFallbackAI = async (prompt: string, _config: FallbackConfig): Promise<Chunk[]> => {
   const sanitizedPrompt = validateAndSanitizePrompt(prompt);
 
   // 1. Try Anthropic First
