@@ -58,6 +58,7 @@ const validateChunkArray = (data: unknown): Chunk[] => {
     console.warn("[Fallback] Parsed response is not an array");
     return [];
   }
+  
   const validatedChunks: Chunk[] = [];
   for (const item of data) {
     if (item && typeof item === 'object') {
@@ -76,12 +77,14 @@ const parseAIResponse = (text: string): Chunk[] => {
       console.error("Response text exceeds maximum length.");
       return [];
     }
+    
     const startIndex = text.indexOf('[');
     const endIndex = text.lastIndexOf(']');
     if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
       const parsedJson = JSON.parse(text.substring(startIndex, endIndex + 1));
       return validateChunkArray(parsedJson);
     }
+    
     const parsedJsonFallback = JSON.parse(text);
     return validateChunkArray(parsedJsonFallback);
   } catch (error) {
