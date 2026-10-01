@@ -50,6 +50,11 @@ export class GitHubFortress {
     }
 
     try {
+      // Validate inputs strictly
+      if (typeof owner !== 'string' || typeof repo !== 'string' || !Array.isArray(files)) {
+        return { success: false, error: "INVALID_INPUT_TYPES" };
+      }
+
       const { data: repository } = await activeOctokit.repos.get({ owner, repo });
       const defaultBranch = repository.default_branch;
 
@@ -117,8 +122,8 @@ const githubFortress = new GitHubFortress();
 async function fetchFileContent(baseUrl: string, relativePath: string): Promise<string> {
   try {
     const targetUrl = new URL(relativePath, baseUrl).href;
-    const response = await axios.get(targetUrl, { timeout: 5000, responseType: 'text' });
-    return response.data;
+    const response = await axios.get(targetUrl, { timeout: 5000, responseType: 'text', maxContentLength: 5 * 1024 * 1024 });
+    return typeof response.data === 'string' ? response.data : String(response.data);
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
     console.error(`[FETCH_FAIL] ${relativePath}: ${errMessage}`);
@@ -144,7 +149,7 @@ export class SiphonEngine {
 
   public siphon(payload: string): SiphonResult<DNAFragment[]> {
     try {
-      if (!payload || payload.length === 0) {
+      if (!payload || typeof payload !== 'string' || payload.length === 0) {
         return { success: false, error: "EMPTY_SOURCE_PAYLOAD", entropyLevel: 0.99 };
       }
 
@@ -230,6 +235,7 @@ export class RecursiveScout {
       const response = await axios.get(url, {
         headers: { 'User-Agent': 'HUXLEY_V3.2_CORE/Scout-Deep' },
         timeout: 5000,
+        maxContentLength: 5 * 1024 * 1024,
         validateStatus: (status) => status === 200
       });
 
@@ -273,8 +279,10 @@ export class SystemGovernance {
   private mode: GovernanceMode = 'ACCELERATE';
   
   public setMode(mode: GovernanceMode): void {
-    this.mode = mode;
-    console.log(`[HUXLEY_GOVERNANCE] Mode Shifted: ${mode}`);
+    if (mode === 'STABILIZE' || mode === 'ACCELERATE') {
+      this.mode = mode;
+      console.log(`[HUXLEY_GOVERNANCE] Mode Shifted: ${mode}`);
+    }
   }
 
   public getMode(): GovernanceMode {
@@ -314,11 +322,21 @@ export class EphemeralStorage {
   }
 
   public setMemoryPressure(pressure: number): void {
-    this.manualPressure = pressure;
-    if (this.manualPressure > 0.7) this.applyDecay();
+    if (typeof pressure === 'number' && !isNaN(pressure)) {
+      this.manualPressure = Math.max(0, Math.min(1, pressure));
+      if (this.manualPressure > 0.7) this.applyDecay();
+    }
   }
 
   public persist(dna: DNA): void {
+    if (!dna || typeof dna.hash !== 'string') return;
+    if (this.state.size >= 1000 && !this.state.has(dna.hash)) {
+      // Evict oldest or excess elements to protect against memory exhaustion
+      const firstKey = this.state.keys().next().value;
+      if (firstKey !== undefined) {
+        this.state.delete(firstKey);
+      }
+    }
     this.state.set(dna.hash, dna);
     console.log(`[HUXLEY_STORAGE] DNA Persisted: ${dna.hash} (Density: ${(this.calculateSystemicDensity() * 100).toFixed(2)}%)`);
   }
@@ -360,7 +378,7 @@ async function startServer(): Promise<void> {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
 
   app.post("/api/ai/anthropic", async (req, res) => {
     const { messages, model } = req.body;
@@ -444,8 +462,8 @@ async function startServer(): Promise<void> {
 
   app.post("/api/scout/siphon", async (req, res) => {
     let { url, generation_stamp } = req.body;
-    if (!url) {
-      res.status(400).json({ success: false, error: "Siphon target null. Structural integrity compromised." });
+    if (!url || typeof url !== 'string') {
+      res.status(400).json({ success: false, error: "Siphon target null or invalid. Structural integrity compromised." });
       return;
     }
 
@@ -454,6 +472,12 @@ async function startServer(): Promise<void> {
     }
 
     try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        res.status(400).json({ success: false, error: "Invalid protocol specified." });
+        return;
+      }
+
       console.log(`[HUXLEY_SCOUT] Siphoning reality from: ${url}`);
       
       const scout = new RecursiveScout(url);
@@ -461,7 +485,8 @@ async function startServer(): Promise<void> {
 
       const response = await axios.get(url, {
         headers: { 'User-Agent': 'HUXLEY_V3.2_CORE/Scout-Siphon' },
-        timeout: 10000
+        timeout: 10000,
+        maxContentLength: 5 * 1024 * 1024
       });
       
       const rawPayload = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
@@ -478,7 +503,7 @@ async function startServer(): Promise<void> {
         success: true,
         origin: url,
         ancestry: {
-          parent_stamp: generation_stamp || "ROOT",
+          parent_stamp: typeof generation_stamp === 'string' ? generation_stamp : "ROOT",
           current_stamp: `GEN_${Date.now()}_${entropySignature}`
         },
         dna_payload: {
@@ -509,8 +534,8 @@ async function startServer(): Promise<void> {
 
   app.post("/api/scout/extract-dna", (req, res) => {
     const { payload } = req.body;
-    if (!payload) {
-      res.status(400).json({ success: false, error: "Empty payload. Structural integrity compromised." });
+    if (!payload || typeof payload !== 'string') {
+      res.status(400).json({ success: false, error: "Empty or invalid payload. Structural integrity compromised." });
       return;
     }
     
@@ -533,16 +558,16 @@ async function startServer(): Promise<void> {
     
     console.log(`[HUXLEY_DRC] Commitment request for ${owner}/${repo} (Files: ${files?.length || 0}, Token Provided: ${!!token})`);
     
-    if (!owner || !repo || !files) {
-      res.status(400).json({ success: false, error: "Missing repository parameters." });
+    if (!owner || !repo || !files || !Array.isArray(files)) {
+      res.status(400).json({ success: false, error: "Missing or invalid repository parameters." });
       return;
     }
 
     let finalFiles = files;
-    if (fetchFresh && baseUrl) {
+    if (fetchFresh && typeof baseUrl === 'string') {
       console.log(`[HUXLEY_DRC] Deep Siphon activated for ${baseUrl}`);
-      finalFiles = await Promise.all(files.map(async (fileItem: { path: string; fetch?: boolean }) => {
-        if (fileItem.fetch) {
+      finalFiles = await Promise.all(files.map(async (fileItem: { path: string; fetch?: boolean; content?: string }) => {
+        if (fileItem.fetch && typeof fileItem.path === 'string') {
           const content = await fetchFileContent(baseUrl, fileItem.path);
           return { path: fileItem.path, content };
         }
@@ -556,7 +581,7 @@ async function startServer(): Promise<void> {
 
   app.post("/api/github/repos", async (req, res) => {
     const { token } = req.body;
-    if (!token) {
+    if (!token || typeof token !== 'string') {
       res.status(400).json({ success: false, error: "Token required" });
       return;
     }
@@ -576,20 +601,25 @@ async function startServer(): Promise<void> {
 
   app.post("/api/scout/ingest", async (req, res) => {
     const { baseUrl, relativePath } = req.body;
-    if (!baseUrl || !relativePath) {
+    if (!baseUrl || !relativePath || typeof baseUrl !== 'string' || typeof relativePath !== 'string') {
       res.status(400).json({ error: "Missing parameters" });
       return;
     }
 
     const content = await fetchFileContent(baseUrl, relativePath);
-    const fileName = relativePath.split('/').pop() || 'index.html';
+    const fileName = path.basename(relativePath) || 'index.html';
     const targetDir = path.join(process.cwd(), 'src', 'captured');
     
     try {
       await fs.mkdir(targetDir, { recursive: true });
       
       const targetPath = path.join(targetDir, fileName);
-      await fs.writeFile(targetPath, content);
+      if (!targetPath.startsWith(targetDir)) {
+        res.status(403).json({ error: "Forbidden path traversal" });
+        return;
+      }
+
+      await fs.writeFile(targetPath, content, 'utf-8');
       
       res.json({ 
         success: true, 
@@ -615,7 +645,7 @@ async function startServer(): Promise<void> {
 
   app.get("/api/system/read-file", async (req, res) => {
     const filePath = req.query.path as string;
-    if (!filePath) {
+    if (!filePath || typeof filePath !== 'string') {
       res.status(400).send("Path required");
       return;
     }
