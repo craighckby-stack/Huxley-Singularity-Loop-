@@ -38,12 +38,25 @@ export interface DiagnosticReport {
 
 const REGISTERED_CHECKS: Record<string, () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>> = {};
 
-export function registerCheck(name: string, checkFn: () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>) {
+const MAX_CHECKS_LIMIT = 1000;
+const MAX_PATH_LENGTH = 4096;
+
+function validateCheckName(name: string): void {
   if (typeof name !== 'string' || name.trim() === '') {
     throw new Error('Diagnostic check name must be a non-empty string.');
   }
+  if (name.length > 256) {
+    throw new Error('Diagnostic check name exceeds maximum length of 256 characters.');
+  }
+}
+
+export function registerCheck(name: string, checkFn: () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>) {
+  validateCheckName(name);
   if (typeof checkFn !== 'function') {
     throw new Error('Diagnostic check function must be provided.');
+  }
+  if (Object.keys(REGISTERED_CHECKS).length >= MAX_CHECKS_LIMIT) {
+    throw new Error('Maximum registered diagnostic checks limit reached.');
   }
   REGISTERED_CHECKS[name] = checkFn;
 }
@@ -77,6 +90,10 @@ export async function runSystemDiagnostics(): Promise<DiagnosticReport> {
   const checks: Record<string, DiagnosticCheckResult> = {};
   const cwd = process.cwd();
 
+  if (cwd.length > MAX_PATH_LENGTH) {
+    throw new Error('Current working directory path exceeds maximum length restrictions.');
+  }
+
   checks['env_loader'] = await executeCheck('env_loader', async () => {
     const envPath = path.resolve(cwd, '.env');
     const examplePath = path.resolve(cwd, '.env.example');
@@ -91,6 +108,9 @@ export async function runSystemDiagnostics(): Promise<DiagnosticReport> {
 
   checks['memory_persistence'] = await executeCheck('memory_persistence', async () => {
     const memoryDir = path.resolve(cwd, 'memory');
+    if (memoryDir.length > MAX_PATH_LENGTH) {
+      throw new Error('Memory directory path exceeds maximum length restrictions.');
+    }
     let exists = false;
     let writable = false;
     try {
@@ -146,6 +166,7 @@ export async function runSystemDiagnostics(): Promise<DiagnosticReport> {
   });
 
   for (const [name, checkFn] of Object.entries(REGISTERED_CHECKS)) {
+    validateCheckName(name);
     checks[name] = await executeCheck(name, checkFn);
   }
 
