@@ -39,6 +39,12 @@ export interface DiagnosticReport {
 const REGISTERED_CHECKS: Record<string, () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>> = {};
 
 export function registerCheck(name: string, checkFn: () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>) {
+  if (typeof name !== 'string' || name.trim() === '') {
+    throw new Error('Diagnostic check name must be a non-empty string.');
+  }
+  if (typeof checkFn !== 'function') {
+    throw new Error('Diagnostic check function must be provided.');
+  }
   REGISTERED_CHECKS[name] = checkFn;
 }
 
@@ -51,27 +57,31 @@ async function executeCheck(
     const result = await checkFn();
     const duration = performance.now() - start;
     return {
-      passed: result.passed,
-      duration_ms: parseFloat(duration.toFixed(3)),
-      message: result.message,
-      metadata: result.metadata,
+      passed: Boolean(result?.passed),
+      duration_ms: parseFloat(Math.max(0, duration).toFixed(3)),
+      message: typeof result?.message === 'string' ? result.message : undefined,
+      metadata: result?.metadata && typeof result.metadata === 'object' ? result.metadata : undefined,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = performance.now() - start;
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       passed: false,
-      duration_ms: parseFloat(duration.toFixed(3)),
-      message: error instanceof Error ? error.message : String(error),
+      duration_ms: parseFloat(Math.max(0, duration).toFixed(3)),
+      message: errorMessage,
     };
   }
 }
 
 export async function runSystemDiagnostics(): Promise<DiagnosticReport> {
   const checks: Record<string, DiagnosticCheckResult> = {};
+  const cwd = process.cwd();
 
   checks['env_loader'] = await executeCheck('env_loader', async () => {
-    const envExists = fs.existsSync(path.join(process.cwd(), '.env'));
-    const exampleExists = fs.existsSync(path.join(process.cwd(), '.env.example'));
+    const envPath = path.resolve(cwd, '.env');
+    const examplePath = path.resolve(cwd, '.env.example');
+    const envExists = fs.existsSync(envPath) && fs.statSync(envPath).isFile();
+    const exampleExists = fs.existsSync(examplePath) && fs.statSync(examplePath).isFile();
     return {
       passed: envExists || exampleExists,
       message: envExists ? 'Active .env file detected' : 'Using default/example configuration',
@@ -80,9 +90,16 @@ export async function runSystemDiagnostics(): Promise<DiagnosticReport> {
   });
 
   checks['memory_persistence'] = await executeCheck('memory_persistence', async () => {
-    const memoryDir = path.join(process.cwd(), 'memory');
-    let exists = fs.existsSync(memoryDir);
+    const memoryDir = path.resolve(cwd, 'memory');
+    let exists = false;
     let writable = false;
+    try {
+      const stats = fs.statSync(memoryDir);
+      exists = stats.isDirectory();
+    } catch {
+      exists = false;
+    }
+
     if (exists) {
       try {
         fs.accessSync(memoryDir, fs.constants.W_OK);
@@ -92,7 +109,7 @@ export async function runSystemDiagnostics(): Promise<DiagnosticReport> {
       }
     } else {
       try {
-        fs.mkdirSync(memoryDir, { recursive: true });
+        fs.mkdirSync(memoryDir, { recursive: true, mode: 0o700 });
         exists = true;
         writable = true;
       } catch {
