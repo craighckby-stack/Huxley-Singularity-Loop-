@@ -19,6 +19,7 @@ class SiphonEngine {
   private currentGeneration: string = "V3.2_CORE";
   private static readonly MAX_PAYLOAD_LENGTH = 1_048_576; // 1MB bounds limit
   private static readonly MAX_MATCHES_LIMIT = 10_000;
+  private static readonly MAX_FIELD_LENGTH = 1_024;
 
   /**
    * Siphons logic-DNA from raw source buffers.
@@ -74,9 +75,12 @@ class SiphonEngine {
       if (matchCount > SiphonEngine.MAX_MATCHES_LIMIT) {
         break;
       }
+      const rawTitle = typeof match[1] === "string" ? match[1].trim() : "";
+      const rawMutation = typeof match[2] === "string" ? match[2].trim() : "";
+
       fragments.push({
-        title: typeof match[1] === "string" ? match[1].trim() : "",
-        mutation: typeof match[2] === "string" ? match[2].trim() : "",
+        title: rawTitle.slice(0, SiphonEngine.MAX_FIELD_LENGTH),
+        mutation: rawMutation.slice(0, SiphonEngine.MAX_FIELD_LENGTH),
         ancestry: "pending",
         weight: 0
       });
