@@ -35,6 +35,78 @@ const URL_REGEX = /^https?:\/\/[^\s$.?#].[^\s]*$/i;
 // Safe path validation pattern to restrict path traversal and injection
 const PATH_REGEX = /^[a-zA-Z0-9_\-\./]+$/;
 
+const DEFAULT_APP_URL = 'http://localhost:3000';
+const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434';
+const DEFAULT_CONSENSUS_THRESHOLD = 0.75;
+const DEFAULT_MEMORY_PATH = './memory';
+const DEFAULT_LOG_LEVEL: EnvConfig['logLevel'] = 'info';
+
+const VALID_LOG_LEVELS: readonly EnvConfig['logLevel'][] = ['debug', 'info', 'warn', 'error'];
+
+interface ProviderMapping {
+  key: string;
+  envKey: keyof NodeJS.ProcessEnv;
+  providerName: string;
+}
+
+const OPTIONAL_PROVIDERS: readonly ProviderMapping[] = [
+  { key: 'anthropicApiKey', envKey: 'ANTHROPIC_API_KEY', providerName: 'anthropic' },
+  { key: 'cerebrasApiKey', envKey: 'CEREBRAS_API_KEY', providerName: 'cerebras' },
+  { key: 'xaiApiKey', envKey: 'XAI_API_KEY', providerName: 'xai' },
+  { key: 'deepseekApiKey', envKey: 'DEEPSEEK_API_KEY', providerName: 'deepseek' },
+  { key: 'openaiApiKey', envKey: 'OPENAI_API_KEY', providerName: 'openai' },
+  { key: 'groqApiKey', envKey: 'GROQ_API_KEY', providerName: 'groq' },
+  { key: 'ollamaBaseUrl', envKey: 'OLLAMA_BASE_URL', providerName: 'ollama' },
+];
+
+function sanitizeUrl(rawUrl: string | undefined, defaultUrl: string, warningMessage: string, warnings: string[]): string {
+  const trimmed = rawUrl?.trim();
+  if (!trimmed) {
+    return defaultUrl;
+  }
+  if (!URL_REGEX.test(trimmed)) {
+    warnings.push(warningMessage);
+    return defaultUrl;
+  }
+  return trimmed;
+}
+
+function parseConsensusThreshold(rawValue: string | undefined, warnings: string[]): number {
+  if (rawValue === undefined) {
+    return DEFAULT_CONSENSUS_THRESHOLD;
+  }
+
+  const parsed = parseFloat(rawValue);
+  if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
+    warnings.push('Invalid CONSENSUS_THRESHOLD format; falling back to 0.75.');
+    return DEFAULT_CONSENSUS_THRESHOLD;
+  }
+
+  if (parsed < 0.0 || parsed > 1.0) {
+    warnings.push('CONSENSUS_THRESHOLD must be between 0.0 and 1.0; clamping value.');
+    return Math.max(0.0, Math.min(1.0, parsed));
+  }
+
+  return parsed;
+}
+
+function sanitizePath(rawPath: string | undefined, warnings: string[]): string {
+  const trimmed = rawPath?.trim();
+  if (!trimmed) {
+    return DEFAULT_MEMORY_PATH;
+  }
+  if (!PATH_REGEX.test(trimmed)) {
+    warnings.push('MEMORY_PERSISTENCE_PATH contains disallowed characters; falling back to default.');
+    return DEFAULT_MEMORY_PATH;
+  }
+  return trimmed;
+}
+
+function parseLogLevel(rawLevel: string | undefined): EnvConfig['logLevel'] {
+  const trimmed = rawLevel?.trim() as EnvConfig['logLevel'];
+  return VALID_LOG_LEVELS.includes(trimmed) ? trimmed : DEFAULT_LOG_LEVEL;
+}
+
 export function validateEnvironment(env: Record<string, string | undefined> = process.env): ValidationResult {
   const missingRequired: string[] = [];
   const warnings: string[] = [];
@@ -49,77 +121,48 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
   }
 
   // Optional / Fallback Providers with sanitization
-  if (env.ANTHROPIC_API_KEY?.trim()) activeProviders.push('anthropic');
-  if (env.CEREBRAS_API_KEY?.trim()) activeProviders.push('cerebras');
-  if (env.XAI_API_KEY?.trim()) activeProviders.push('xai');
-  if (env.DEEPSEEK_API_KEY?.trim()) activeProviders.push('deepseek');
-  if (env.OPENAI_API_KEY?.trim()) activeProviders.push('openai');
-  if (env.GROQ_API_KEY?.trim()) activeProviders.push('groq');
-  if (env.OLLAMA_BASE_URL?.trim()) activeProviders.push('ollama');
+  const optionalConfigValues: Partial<EnvConfig> = {};
+
+  for (const provider of OPTIONAL_PROVIDERS) {
+    const value = env[provider.envKey]?.trim();
+    if (value) {
+      activeProviders.push(provider.providerName);
+      (optionalConfigValues as Record<string, unknown>)[provider.key] = value;
+    }
+  }
 
   // Client-Side Deprecation Audit
   if (env.VITE_ANTHROPIC_API_KEY || env.VITE_CEREBRAS_API_KEY || env.VITE_XAI_API_KEY) {
     warnings.push('Client-side VITE_* AI API keys detected. Migrating to server-proxy route is recommended.');
   }
 
-  // URL bounds and validation check for APP_URL
-  let appUrl = env.APP_URL?.trim() || 'http://localhost:3000';
-  if (!URL_REGEX.test(appUrl)) {
-    warnings.push('APP_URL is malformed or invalid; falling back to default.');
-    appUrl = 'http://localhost:3000';
-  }
+  const appUrl = sanitizeUrl(
+    env.APP_URL,
+    DEFAULT_APP_URL,
+    'APP_URL is malformed or invalid; falling back to default.',
+    warnings
+  );
 
-  // URL bounds and validation check for OLLAMA_BASE_URL
-  let ollamaBaseUrl = env.OLLAMA_BASE_URL?.trim() || 'http://localhost:11434';
-  if (!URL_REGEX.test(ollamaBaseUrl)) {
-    warnings.push('OLLAMA_BASE_URL is malformed or invalid; falling back to default.');
-    ollamaBaseUrl = 'http://localhost:11434';
-  }
+  const ollamaBaseUrl = sanitizeUrl(
+    env.OLLAMA_BASE_URL,
+    DEFAULT_OLLAMA_BASE_URL,
+    'OLLAMA_BASE_URL is malformed or invalid; falling back to default.',
+    warnings
+  );
 
-  // Strict numeric bounds checking for consensus threshold
-  let consensusThreshold = 0.75;
-  if (env.CONSENSUS_THRESHOLD !== undefined) {
-    const parsedThreshold = parseFloat(env.CONSENSUS_THRESHOLD);
-    if (!isNaN(parsedThreshold) && isFinite(parsedThreshold)) {
-      if (parsedThreshold < 0.0 || parsedThreshold > 1.0) {
-        warnings.push('CONSENSUS_THRESHOLD must be between 0.0 and 1.0; clamping value.');
-        consensusThreshold = Math.max(0.0, Math.min(1.0, parsedThreshold));
-      } else {
-        consensusThreshold = parsedThreshold;
-      }
-    } else {
-      warnings.push('Invalid CONSENSUS_THRESHOLD format; falling back to 0.75.');
-    }
-  }
-
-  // Path persistence validation to prevent path traversal
-  let memoryPersistencePath = env.MEMORY_PERSISTENCE_PATH?.trim() || './memory';
-  if (!PATH_REGEX.test(memoryPersistencePath)) {
-    warnings.push('MEMORY_PERSISTENCE_PATH contains disallowed characters; falling back to default.');
-    memoryPersistencePath = './memory';
-  }
-
-  // Log level validation
-  const rawLogLevel = env.LOG_LEVEL?.trim();
-  const validLogLevels: EnvConfig['logLevel'][] = ['debug', 'info', 'warn', 'error'];
-  const logLevel: EnvConfig['logLevel'] = validLogLevels.includes(rawLogLevel as EnvConfig['logLevel'])
-    ? (rawLogLevel as EnvConfig['logLevel'])
-    : 'info';
+  const consensusThreshold = parseConsensusThreshold(env.CONSENSUS_THRESHOLD, warnings);
+  const memoryPersistencePath = sanitizePath(env.MEMORY_PERSISTENCE_PATH, warnings);
+  const logLevel = parseLogLevel(env.LOG_LEVEL);
 
   const config: Partial<EnvConfig> = {
     geminiApiKey: geminiKey,
     appUrl,
-    anthropicApiKey: env.ANTHROPIC_API_KEY?.trim(),
-    cerebrasApiKey: env.CEREBRAS_API_KEY?.trim(),
-    xaiApiKey: env.XAI_API_KEY?.trim(),
-    deepseekApiKey: env.DEEPSEEK_API_KEY?.trim(),
-    openaiApiKey: env.OPENAI_API_KEY?.trim(),
-    groqApiKey: env.GROQ_API_KEY?.trim(),
     ollamaBaseUrl,
     consensusThreshold,
     zeroLeakSandboxEnabled: env.ZERO_LEAK_SANDBOX_ENABLED === 'true',
     memoryPersistencePath,
     logLevel,
+    ...optionalConfigValues,
   };
 
   return {
