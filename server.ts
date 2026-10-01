@@ -51,7 +51,7 @@ export class GitHubFortress {
 
     try {
       // Validate inputs strictly
-      if (typeof owner !== 'string' || typeof repo !== 'string' || !Array.isArray(files)) {
+      if (typeof owner !== 'string' || owner.trim() === '' || typeof repo !== 'string' || repo.trim() === '' || !Array.isArray(files)) {
         return { success: false, error: "INVALID_INPUT_TYPES" };
       }
 
@@ -67,6 +67,9 @@ export class GitHubFortress {
 
       const blobs = await Promise.all(
         files.map(async (file) => {
+          if (typeof file.path !== 'string' || typeof file.content !== 'string') {
+            throw new Error("INVALID_FILE_PAYLOAD");
+          }
           const { data: blob } = await activeOctokit.git.createBlob({
             owner,
             repo,
@@ -89,7 +92,9 @@ export class GitHubFortress {
         })),
       });
 
-      const generationalMessage = `${message}\n\n[GENERATIONAL_STAMP: ${stamp}]\n[DETERMINISTIC_AST_WEIGHTING: ENABLED]`;
+      const safeMessage = typeof message === 'string' ? message : "";
+      const safeStamp = typeof stamp === 'string' ? stamp : "";
+      const generationalMessage = `${safeMessage}\n\n[GENERATIONAL_STAMP: ${safeStamp}]\n[DETERMINISTIC_AST_WEIGHTING: ENABLED]`;
       const { data: commit } = await activeOctokit.git.createCommit({
         owner,
         repo,
@@ -105,7 +110,7 @@ export class GitHubFortress {
         sha: commit.sha,
       });
 
-      return { success: true, commitHash: commit.sha, stamp };
+      return { success: true, commitHash: commit.sha, stamp: safeStamp };
     } catch (error: unknown) {
       const errMessage = error instanceof Error ? error.message : String(error);
       return { 
@@ -153,7 +158,9 @@ export class SiphonEngine {
         return { success: false, error: "EMPTY_SOURCE_PAYLOAD", entropyLevel: 0.99 };
       }
 
-      const fragments: DNAFragment[] = this.parseDNA(payload);
+      // Bound maximum length to prevent regex catastrophic backtracking
+      const sanitizedPayload = payload.length > 5 * 1024 * 1024 ? payload.substring(0, 5 * 1024 * 1024) : payload;
+      const fragments: DNAFragment[] = this.parseDNA(sanitizedPayload);
 
       if (fragments.length === 0) {
         return { success: false, error: "NO_SURVIVABLE_TRAITS_FOUND", entropyLevel: 0.85 };
@@ -177,8 +184,8 @@ export class SiphonEngine {
     const matches = [...raw.matchAll(patternRegex)];
     
     return matches.map(match => ({
-      title: match[1] || "",
-      mutation: match[2] || "",
+      title: typeof match[1] === 'string' ? match[1] : "",
+      mutation: typeof match[2] === 'string' ? match[2] : "",
       ancestry: "pending",
       weight: 0
     }));
@@ -212,7 +219,10 @@ export class RecursiveScout {
     let depth = 0;
     let pageCount = 0;
 
-    while (this.pagesToVisit.length > 0 && pageCount < maxPages) {
+    const safeMaxDepth = Math.max(1, Math.min(maxDepth, 5));
+    const safeMaxPages = Math.max(1, Math.min(maxPages, 100));
+
+    while (this.pagesToVisit.length > 0 && pageCount < safeMaxPages) {
       const currentBatch = [...this.pagesToVisit];
       this.pagesToVisit = [];
       const batchPromises = currentBatch.map(url => this.visitPage(url));
@@ -220,7 +230,7 @@ export class RecursiveScout {
       
       depth++;
       pageCount += currentBatch.length;
-      if (depth >= maxDepth) break;
+      if (depth >= safeMaxDepth) break;
     }
 
     return Array.from(this.assets);
@@ -243,14 +253,14 @@ export class RecursiveScout {
 
       $('link[href], script[src], img[src]').each((_, element) => {
         const src = $(element).attr('src') || $(element).attr('href');
-        if (src && !src.startsWith('http') && !src.startsWith('//') && !src.startsWith('data:')) {
+        if (src && typeof src === 'string' && !src.startsWith('http') && !src.startsWith('//') && !src.startsWith('data:')) {
           this.assets.add(src.split('?')[0]);
         }
       });
 
       $('a[href]').each((_, element) => {
         const href = $(element).attr('href');
-        if (!href) return;
+        if (!href || typeof href !== 'string') return;
 
         try {
           const absoluteUrl = new URL(href, url);
@@ -382,6 +392,10 @@ async function startServer(): Promise<void> {
 
   app.post("/api/ai/anthropic", async (req, res) => {
     const { messages, model } = req.body;
+    if (!Array.isArray(messages)) {
+      res.status(400).json({ error: "Invalid messages array" });
+      return;
+    }
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) {
       res.status(500).json({ error: "ANTHROPIC_API_KEY missing" });
@@ -397,7 +411,7 @@ async function startServer(): Promise<void> {
           "anthropic-version": "2023-06-01"
         },
         body: JSON.stringify({
-          model: model || "claude-3-5-sonnet-20240620",
+          model: typeof model === 'string' ? model : "claude-3-5-sonnet-20240620",
           max_tokens: 4096,
           messages
         })
@@ -412,6 +426,10 @@ async function startServer(): Promise<void> {
 
   app.post("/api/ai/cerebras", async (req, res) => {
     const { messages, model } = req.body;
+    if (!Array.isArray(messages)) {
+      res.status(400).json({ error: "Invalid messages array" });
+      return;
+    }
     const key = process.env.CEREBRAS_API_KEY;
     if (!key) {
       res.status(500).json({ error: "CEREBRAS_API_KEY missing" });
@@ -425,7 +443,7 @@ async function startServer(): Promise<void> {
           "Authorization": `Bearer ${key}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ model: model || "llama3.1-70b", messages })
+        body: JSON.stringify({ model: typeof model === 'string' ? model : "llama3.1-70b", messages })
       });
       const data = await response.json();
       res.status(response.status).json(data);
@@ -437,6 +455,10 @@ async function startServer(): Promise<void> {
 
   app.post("/api/ai/grok", async (req, res) => {
     const { messages, model } = req.body;
+    if (!Array.isArray(messages)) {
+      res.status(400).json({ error: "Invalid messages array" });
+      return;
+    }
     const key = process.env.XAI_API_KEY;
     if (!key) {
       res.status(500).json({ error: "XAI_API_KEY missing" });
@@ -450,7 +472,7 @@ async function startServer(): Promise<void> {
           "Authorization": `Bearer ${key}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ model: model || "grok-beta", messages })
+        body: JSON.stringify({ model: typeof model === 'string' ? model : "grok-beta", messages })
       });
       const data = await response.json();
       res.status(response.status).json(data);
@@ -558,7 +580,7 @@ async function startServer(): Promise<void> {
     
     console.log(`[HUXLEY_DRC] Commitment request for ${owner}/${repo} (Files: ${files?.length || 0}, Token Provided: ${!!token})`);
     
-    if (!owner || !repo || !files || !Array.isArray(files)) {
+    if (!owner || typeof owner !== 'string' || !repo || typeof repo !== 'string' || !files || !Array.isArray(files)) {
       res.status(400).json({ success: false, error: "Missing or invalid repository parameters." });
       return;
     }
@@ -567,7 +589,7 @@ async function startServer(): Promise<void> {
     if (fetchFresh && typeof baseUrl === 'string') {
       console.log(`[HUXLEY_DRC] Deep Siphon activated for ${baseUrl}`);
       finalFiles = await Promise.all(files.map(async (fileItem: { path: string; fetch?: boolean; content?: string }) => {
-        if (fileItem.fetch && typeof fileItem.path === 'string') {
+        if (fileItem && fileItem.fetch && typeof fileItem.path === 'string') {
           const content = await fetchFileContent(baseUrl, fileItem.path);
           return { path: fileItem.path, content };
         }
@@ -575,7 +597,11 @@ async function startServer(): Promise<void> {
       }));
     }
 
-    const result = await githubFortress.commitReality(owner, repo, finalFiles, message, stamp, token);
+    const safeMessage = typeof message === 'string' ? message : "";
+    const safeStamp = typeof stamp === 'string' ? stamp : "";
+    const safeToken = typeof token === 'string' ? token : undefined;
+
+    const result = await githubFortress.commitReality(owner, repo, finalFiles, safeMessage, safeStamp, safeToken);
     res.json(result);
   });
 
@@ -608,12 +634,12 @@ async function startServer(): Promise<void> {
 
     const content = await fetchFileContent(baseUrl, relativePath);
     const fileName = path.basename(relativePath) || 'index.html';
-    const targetDir = path.join(process.cwd(), 'src', 'captured');
+    const targetDir = path.resolve(process.cwd(), 'src', 'captured');
     
     try {
       await fs.mkdir(targetDir, { recursive: true });
       
-      const targetPath = path.join(targetDir, fileName);
+      const targetPath = path.resolve(targetDir, fileName);
       if (!targetPath.startsWith(targetDir)) {
         res.status(403).json({ error: "Forbidden path traversal" });
         return;
@@ -634,8 +660,15 @@ async function startServer(): Promise<void> {
 
   app.post("/api/system/control", (req, res) => {
     const { mode, pressure } = req.body;
-    if (mode) governance.setMode(mode);
-    if (pressure !== undefined) huxleyStorage.setMemoryPressure(pressure);
+    if (mode === 'STABILIZE' || mode === 'ACCELERATE') {
+      governance.setMode(mode);
+    }
+    if (pressure !== undefined) {
+      const numPressure = Number(pressure);
+      if (!isNaN(numPressure)) {
+        huxleyStorage.setMemoryPressure(numPressure);
+      }
+    }
     res.json({ success: true, status: huxleyStorage.getStatus() });
   });
 
@@ -651,8 +684,9 @@ async function startServer(): Promise<void> {
     }
     
     try {
-      const fullPath = path.resolve(process.cwd(), filePath);
-      if (!fullPath.startsWith(process.cwd())) {
+      const baseDir = path.resolve(process.cwd());
+      const fullPath = path.resolve(baseDir, filePath);
+      if (!fullPath.startsWith(baseDir)) {
         res.status(403).send("Forbidden");
         return;
       }
