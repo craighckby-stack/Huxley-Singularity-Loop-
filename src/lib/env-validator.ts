@@ -60,15 +60,15 @@ const OPTIONAL_PROVIDERS: readonly ProviderMapping[] = [
 ];
 
 function sanitizeUrl(rawUrl: string | undefined, defaultUrl: string, warningMessage: string, warnings: string[]): string {
-  const trimmed = rawUrl?.trim();
-  if (!trimmed) {
+  const trimmedUrl = rawUrl?.trim();
+  if (!trimmedUrl) {
     return defaultUrl;
   }
-  if (!URL_REGEX.test(trimmed)) {
+  if (!URL_REGEX.test(trimmedUrl)) {
     warnings.push(warningMessage);
     return defaultUrl;
   }
-  return trimmed;
+  return trimmedUrl;
 }
 
 function parseConsensusThreshold(rawValue: string | undefined, warnings: string[]): number {
@@ -76,35 +76,35 @@ function parseConsensusThreshold(rawValue: string | undefined, warnings: string[
     return DEFAULT_CONSENSUS_THRESHOLD;
   }
 
-  const parsed = parseFloat(rawValue);
-  if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
+  const parsedValue = parseFloat(rawValue);
+  if (Number.isNaN(parsedValue) || !Number.isFinite(parsedValue)) {
     warnings.push('Invalid CONSENSUS_THRESHOLD format; falling back to 0.75.');
     return DEFAULT_CONSENSUS_THRESHOLD;
   }
 
-  if (parsed < 0.0 || parsed > 1.0) {
+  if (parsedValue < 0.0 || parsedValue > 1.0) {
     warnings.push('CONSENSUS_THRESHOLD must be between 0.0 and 1.0; clamping value.');
-    return Math.max(0.0, Math.min(1.0, parsed));
+    return Math.max(0.0, Math.min(1.0, parsedValue));
   }
 
-  return parsed;
+  return parsedValue;
 }
 
 function sanitizePath(rawPath: string | undefined, warnings: string[]): string {
-  const trimmed = rawPath?.trim();
-  if (!trimmed) {
+  const trimmedPath = rawPath?.trim();
+  if (!trimmedPath) {
     return DEFAULT_MEMORY_PATH;
   }
-  if (!PATH_REGEX.test(trimmed)) {
+  if (!PATH_REGEX.test(trimmedPath)) {
     warnings.push('MEMORY_PERSISTENCE_PATH contains disallowed characters; falling back to default.');
     return DEFAULT_MEMORY_PATH;
   }
-  return trimmed;
+  return trimmedPath;
 }
 
 function parseLogLevel(rawLevel: string | undefined): EnvConfig['logLevel'] {
-  const trimmed = rawLevel?.trim() as EnvConfig['logLevel'];
-  return VALID_LOG_LEVELS.includes(trimmed) ? trimmed : DEFAULT_LOG_LEVEL;
+  const trimmedLevel = rawLevel?.trim() as EnvConfig['logLevel'];
+  return VALID_LOG_LEVELS.includes(trimmedLevel) ? trimmedLevel : DEFAULT_LOG_LEVEL;
 }
 
 export function validateEnvironment(env: Record<string, string | undefined> = process.env): ValidationResult {
@@ -124,10 +124,10 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
   const optionalConfigValues: Partial<EnvConfig> = {};
 
   for (const provider of OPTIONAL_PROVIDERS) {
-    const value = env[provider.envKey]?.trim();
-    if (value) {
+    const providerValue = env[provider.envKey]?.trim();
+    if (providerValue) {
       activeProviders.push(provider.providerName);
-      (optionalConfigValues as Record<string, unknown>)[provider.key] = value;
+      (optionalConfigValues as Record<string, unknown>)[provider.key] = providerValue;
     }
   }
 
