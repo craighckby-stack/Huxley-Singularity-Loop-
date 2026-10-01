@@ -42,7 +42,7 @@ async function fetchWithExponentialBackoff<T>(
         throw error;
       }
       const delay = initialDelay * Math.pow(2, attempt) + Math.random() * 1000;
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise<void>(resolve => setTimeout(resolve, delay));
     }
   }
   throw new Error("Maximum retries exceeded");
@@ -58,12 +58,16 @@ function getApiKey(): string {
 
 function parseChunkResults(text: string): Chunk[] {
   try {
-    return JSON.parse(text);
+    return JSON.parse(text) as Chunk[];
   } catch {
     const startIndex = text.indexOf('[');
     const endIndex = text.lastIndexOf(']');
     if (startIndex !== -1 && endIndex !== -1) {
-      return JSON.parse(text.substring(startIndex, endIndex + 1));
+      try {
+        return JSON.parse(text.substring(startIndex, endIndex + 1)) as Chunk[];
+      } catch {
+        return [];
+      }
     }
     return [];
   }
@@ -204,7 +208,8 @@ export const generatePerspective = async (
 
     const text = response.text || "No perspective generated.";
     
-    const sources = response.candidates?.[0]?.groundingMetadata?.searchEntryPoint ? [{
+    const hasSearchEntry = response.candidates?.[0]?.groundingMetadata?.searchEntryPoint !== undefined;
+    const sources = hasSearchEntry ? [{
       title: "Google Search Knowledge Base",
       uri: `https://www.google.com/search?q=${encodeURIComponent(topic)}`
     }] : [];
