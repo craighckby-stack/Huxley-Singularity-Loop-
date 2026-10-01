@@ -39,6 +39,7 @@ interface CerebrasResponseBody {
 
 const MAX_PROMPT_LENGTH = 100000;
 const MAX_RESPONSE_LENGTH = 1048576;
+const MAX_ARRAY_ITEMS = 10000;
 
 const validateAndSanitizePrompt = (prompt: string): string => {
   if (typeof prompt !== 'string') {
@@ -59,9 +60,14 @@ const validateChunkArray = (data: unknown): Chunk[] => {
     return [];
   }
   
+  if (data.length > MAX_ARRAY_ITEMS) {
+    console.warn("[Fallback] Parsed response array exceeds maximum allowed items.");
+    return [];
+  }
+
   const validatedChunks: Chunk[] = [];
   for (const item of data) {
-    if (item && typeof item === 'object') {
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
       validatedChunks.push(item as Chunk);
     }
   }
@@ -81,8 +87,11 @@ const parseAIResponse = (text: string): Chunk[] => {
     const startIndex = text.indexOf('[');
     const endIndex = text.lastIndexOf(']');
     if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
-      const parsedJson = JSON.parse(text.substring(startIndex, endIndex + 1));
-      return validateChunkArray(parsedJson);
+      const slicedText = text.substring(startIndex, endIndex + 1);
+      if (slicedText.length <= MAX_RESPONSE_LENGTH) {
+        const parsedJson = JSON.parse(slicedText);
+        return validateChunkArray(parsedJson);
+      }
     }
     
     const parsedJsonFallback = JSON.parse(text);
@@ -95,6 +104,10 @@ const parseAIResponse = (text: string): Chunk[] => {
 
 const requestAIProxy = async (endpoint: string, prompt: string, suffix: string): Promise<unknown | null> => {
   try {
+    if (typeof endpoint !== 'string' || endpoint.length === 0) {
+      throw new Error("INVALID_ENDPOINT: Endpoint must be a valid non-empty string.");
+    }
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
