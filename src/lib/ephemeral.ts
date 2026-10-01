@@ -18,22 +18,22 @@ const ENTROPY_BONUS_SCALER = 7200000; // Up to 2 extra hours for high entropy
 
 export class EphemeralStorage {
   private readonly state = new Map<string, DNA>();
-  private memoryPressure: number = 0; // 0 to 1
-  private decayTimer: ReturnType<typeof setInterval>;
+  private memoryPressure = 0; // 0 to 1
+  private readonly decayTimer: ReturnType<typeof setInterval>;
 
   constructor() {
     // Background monitor for pressure-based decay
     this.decayTimer = setInterval(() => this.applyDecay(), DECAY_INTERVAL_MS);
   }
 
-  setMemoryPressure(pressure: number): void {
+  public setMemoryPressure(pressure: number): void {
     this.memoryPressure = Math.max(0, Math.min(1, pressure));
     if (this.memoryPressure > HIGH_PRESSURE_THRESHOLD) {
       this.applyDecay(); // Immediate cull on high pressure
     }
   }
 
-  persist(dna: DNA): void {
+  public persist(dna: DNA): void {
     this.state.set(dna.hash, dna);
     console.log(`[HUXLEY_STORAGE] Persisted DNA: ${dna.hash} (Entropy: ${dna.entropy})`);
   }
@@ -60,15 +60,15 @@ export class EphemeralStorage {
     }
   }
 
-  get(hash: string): DNA | undefined {
+  public get(hash: string): DNA | undefined {
     return this.state.get(hash);
   }
 
-  getAll(): DNA[] {
+  public getAll(): DNA[] {
     return Array.from(this.state.values());
   }
 
-  get size(): number {
+  public get size(): number {
     return this.state.size;
   }
 }
