@@ -21,7 +21,7 @@ const sanitizeSegment = (value: string, fieldName: string): string => {
   return value;
 };
 
-export const ghFetch = async (url: string, token: string, options: RequestInit = {}) => {
+export const ghFetch = async (url: string, token: string, options: RequestInit = {}): Promise<Response> => {
   if (typeof token !== 'string' || token.trim().length === 0) {
     throw new Error("Authentication Error: GitHub token is required.");
   }
@@ -39,7 +39,7 @@ export const ghFetch = async (url: string, token: string, options: RequestInit =
     ...((options.headers as Record<string, string>) || {}),
   };
 
-  const response = await fetch(url, { ...options, headers }).catch(e => {
+  const response = await fetch(url, { ...options, headers }).catch((e: unknown) => {
     if (e instanceof Error && e.message.includes('Failed to fetch')) {
       throw new Error("Network Error: Failed to connect to GitHub. Verify your credentials and internet connection.");
     }
@@ -72,7 +72,7 @@ export const ghFetch = async (url: string, token: string, options: RequestInit =
   return response;
 };
 
-export const getRepoTree = async (repoUrl: string, token: string, branch: string = 'main') => {
+export const getRepoTree = async (repoUrl: string, token: string, branch: string = 'main'): Promise<any> => {
   if (typeof repoUrl !== 'string') {
     throw new Error('Invalid repository URL');
   }
@@ -87,12 +87,12 @@ export const getRepoTree = async (repoUrl: string, token: string, branch: string
   return res.json();
 };
 
-export const getFileContent = async (url: string, token: string) => {
+export const getFileContent = async (url: string, token: string): Promise<string> => {
   if (typeof url !== 'string' || !url.startsWith('https://api.github.com/')) {
     throw new Error('Security Error: Invalid or untrusted file content URL endpoint.');
   }
   const res = await ghFetch(url, token);
-  const data = await res.json();
+  const data = await res.json() as { content?: string };
   
   if (!data || !data.content) return "";
 
@@ -108,13 +108,13 @@ export const getFileContent = async (url: string, token: string) => {
       bytes[i] = binaryString.charCodeAt(i);
     }
     return new TextDecoder().decode(bytes);
-  } catch (e) {
+  } catch (e: unknown) {
     console.warn(`[github] Failed to decode content for ${url}:`, e);
     return "/* [Error: Binary or malformed content could not be decoded] */";
   }
 };
 
-export const getUserRepos = async (owner: string, token: string) => {
+export const getUserRepos = async (owner: string, token: string): Promise<any> => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   try {
     const res = await ghFetch(`https://api.github.com/users/${safeOwner}/repos?per_page=100&sort=updated`, token);
@@ -125,14 +125,14 @@ export const getUserRepos = async (owner: string, token: string) => {
   }
 };
 
-export const getBranches = async (owner: string, repo: string, token: string) => {
+export const getBranches = async (owner: string, repo: string, token: string): Promise<any> => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
   const res = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/branches`, token);
   return res.json();
 };
 
-export const createBranch = async (owner: string, repo: string, newBranch: string, baseBranch: string, token: string) => {
+export const createBranch = async (owner: string, repo: string, newBranch: string, baseBranch: string, token: string): Promise<any> => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
   const safeNewBranch = sanitizeSegment(newBranch, 'newBranch');
@@ -141,7 +141,7 @@ export const createBranch = async (owner: string, repo: string, newBranch: strin
   
   const encodedBase = encodeURIComponent(safeBaseBranch);
   const baseRes = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/commits/${encodedBase}`, token);
-  const baseData = await baseRes.json();
+  const baseData = await baseRes.json() as { sha: string };
   const sha = baseData.sha;
 
   try {
@@ -168,7 +168,7 @@ export const createBranch = async (owner: string, repo: string, newBranch: strin
   }
 };
 
-export const distillRepository = async (owner: string, repo: string, readmeContent: string, token: string, branch: string) => {
+export const distillRepository = async (owner: string, repo: string, readmeContent: string, token: string, branch: string): Promise<any> => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
   const safeBranch = sanitizeSegment(branch, 'branch');
@@ -176,7 +176,7 @@ export const distillRepository = async (owner: string, repo: string, readmeConte
   
   const encodedBranch = encodeURIComponent(safeBranch);
   const commitRes = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/commits/${encodedBranch}`, token);
-  const commitData = await commitRes.json();
+  const commitData = await commitRes.json() as { sha: string };
   const parentSha = commitData.sha;
 
   const blobRes = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/git/blobs`, token, {
@@ -186,7 +186,7 @@ export const distillRepository = async (owner: string, repo: string, readmeConte
       encoding: 'base64'
     })
   });
-  const blobData = await blobRes.json();
+  const blobData = await blobRes.json() as { sha: string };
 
   const treeRes = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/git/trees`, token, {
     method: 'POST',
@@ -201,7 +201,7 @@ export const distillRepository = async (owner: string, repo: string, readmeConte
       ]
     })
   });
-  const treeData = await treeRes.json();
+  const treeData = await treeRes.json() as { sha: string };
 
   const finalCommitRes = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/git/commits`, token, {
     method: 'POST',
@@ -211,7 +211,7 @@ export const distillRepository = async (owner: string, repo: string, readmeConte
       parents: [parentSha]
     })
   });
-  const finalCommitData = await finalCommitRes.json();
+  const finalCommitData = await finalCommitRes.json() as { sha: string };
 
   const encodedRef = encodeURIComponent(safeBranch);
   const updateRes = await ghFetch(`https://api.github.com/repos/${safeOwner}/${safeRepo}/git/refs/heads/${encodedRef}`, token, {
@@ -224,7 +224,7 @@ export const distillRepository = async (owner: string, repo: string, readmeConte
   return updateRes.json();
 };
 
-export const renameBranch = async (owner: string, repo: string, oldBranch: string, newName: string, token: string) => {
+export const renameBranch = async (owner: string, repo: string, oldBranch: string, newName: string, token: string): Promise<any> => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
   const safeOldBranch = sanitizeSegment(oldBranch, 'oldBranch');
@@ -238,7 +238,7 @@ export const renameBranch = async (owner: string, repo: string, oldBranch: strin
   return res.json();
 };
 
-export const deleteBranch = async (owner: string, repo: string, branch: string, token: string) => {
+export const deleteBranch = async (owner: string, repo: string, branch: string, token: string): Promise<Response> => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
   const safeBranch = sanitizeSegment(branch, 'branch');
@@ -250,7 +250,7 @@ export const deleteBranch = async (owner: string, repo: string, branch: string, 
   return res;
 };
 
-export const updateRepoVisibility = async (owner: string, repo: string, isPrivate: boolean, token: string) => {
+export const updateRepoVisibility = async (owner: string, repo: string, isPrivate: boolean, token: string): Promise<any> => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
   console.log(`[updateRepoVisibility] Setting ${safeRepo} to ${isPrivate ? 'private' : 'public'}`);
@@ -261,7 +261,7 @@ export const updateRepoVisibility = async (owner: string, repo: string, isPrivat
   return res.json();
 };
 
-export const protectBranch = async (owner: string, repo: string, branch: string, token: string) => {
+export const protectBranch = async (owner: string, repo: string, branch: string, token: string): Promise<any> => {
   const safeOwner = sanitizeSegment(owner, 'owner');
   const safeRepo = sanitizeSegment(repo, 'repo');
   const safeBranch = sanitizeSegment(branch, 'branch');
