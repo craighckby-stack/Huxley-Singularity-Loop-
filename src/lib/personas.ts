@@ -36,15 +36,17 @@ const SYNTHETIC_START_INDEX = 5;
  * Validates and constructs a single synthetic persona entry.
  */
 function createSyntheticPersona(index: number): [string, Persona] {
-  const id = index + SYNTHETIC_START_INDEX;
-  if (!Number.isInteger(id) || id < 0) {
+  const personaId = index + SYNTHETIC_START_INDEX;
+  if (!Number.isInteger(personaId) || personaId < 0) {
     throw new Error("Invalid persona identifier computed.");
   }
-  const personaName = `Expert Persona ${id}`;
+  
+  const personaName = `Expert Persona ${personaId}`;
   const persona: Persona = Object.freeze({
-    description: `A unique, expert-level AI persona focusing on architectural niche area #${id}.`,
+    description: `A unique, expert-level AI persona focusing on architectural niche area #${personaId}.`,
     promptModifier: `Provide a deep, comprehensive analysis of the topic from the perspective of '${personaName}'. The response must be approximately 250 lines long. Use dense, continuous prose without markdown formatting.`
   });
+  
   return [personaName, persona];
 }
 
