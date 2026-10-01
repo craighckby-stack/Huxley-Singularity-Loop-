@@ -76,21 +76,21 @@ const parseAIResponse = (text: string): Chunk[] => {
       console.error("Response text exceeds maximum length.");
       return [];
     }
-    const start = text.indexOf('[');
-    const end = text.lastIndexOf(']');
-    if (start !== -1 && end !== -1 && start < end) {
-      const parsed = JSON.parse(text.substring(start, end + 1));
-      return validateChunkArray(parsed);
+    const startIndex = text.indexOf('[');
+    const endIndex = text.lastIndexOf(']');
+    if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+      const parsedJson = JSON.parse(text.substring(startIndex, endIndex + 1));
+      return validateChunkArray(parsedJson);
     }
-    const parsed = JSON.parse(text);
-    return validateChunkArray(parsed);
-  } catch (e) {
-    console.error("Failed to parse fallback AI response:", e);
+    const parsedJsonFallback = JSON.parse(text);
+    return validateChunkArray(parsedJsonFallback);
+  } catch (error) {
+    console.error("Failed to parse fallback AI response:", error);
     return [];
   }
 };
 
-const requestAIProxy = async (endpoint: string, prompt: string, suffix: string): Promise<Chunk[] | null> => {
+const requestAIProxy = async (endpoint: string, prompt: string, suffix: string): Promise<any | null> => {
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -112,8 +112,8 @@ const requestAIProxy = async (endpoint: string, prompt: string, suffix: string):
     }
 
     return data;
-  } catch (e) {
-    console.error(`[Fallback] Request to ${endpoint} failed:`, e);
+  } catch (error) {
+    console.error(`[Fallback] Request to ${endpoint} failed:`, error);
     return null;
   }
 };
@@ -123,11 +123,11 @@ export const callFallbackAI = async (prompt: string, config: FallbackConfig): Pr
 
   // 1. Try Anthropic First
   console.log("[Fallback] Attempting Anthropic via Proxy...");
-  const anthropicData = await requestAIProxy(
+  const anthropicData = (await requestAIProxy(
     '/api/ai/anthropic',
     sanitizedPrompt,
     "RESPONSE MUST BE A JSON ARRAY OF CHUNKS. NO EXPLANATION."
-  ) as AnthropicResponseBody | null;
+  )) as AnthropicResponseBody | null;
 
   if (
     anthropicData?.content &&
@@ -142,11 +142,11 @@ export const callFallbackAI = async (prompt: string, config: FallbackConfig): Pr
 
   // 2. Try Cerebras Second
   console.log("[Fallback] Attempting Cerebras via Proxy...");
-  const cerebrasData = await requestAIProxy(
+  const cerebrasData = (await requestAIProxy(
     '/api/ai/cerebras',
     sanitizedPrompt,
     "RESPONSE MUST BE A JSON ARRAY. RETURN ONLY JSON."
-  ) as CerebrasResponseBody | null;
+  )) as CerebrasResponseBody | null;
 
   if (
     cerebrasData?.choices &&
@@ -161,11 +161,11 @@ export const callFallbackAI = async (prompt: string, config: FallbackConfig): Pr
 
   // 3. Try Grok Third
   console.log("[Fallback] Attempting Grok via Proxy...");
-  const grokData = await requestAIProxy(
+  const grokData = (await requestAIProxy(
     '/api/ai/grok',
     sanitizedPrompt,
     "RESPONSE MUST BE A JSON ARRAY. RETURN ONLY JSON."
-  ) as CerebrasResponseBody | null;
+  )) as CerebrasResponseBody | null;
 
   if (
     grokData?.choices &&
