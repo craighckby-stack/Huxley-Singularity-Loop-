@@ -4,10 +4,10 @@
  */
 
 export interface DNA {
-  hash: string;
-  payload: unknown;
-  entropy: number;
-  timestamp: number;
+  readonly hash: string;
+  readonly payload: unknown;
+  readonly entropy: number;
+  readonly timestamp: number;
 }
 
 const DECAY_INTERVAL_MS = 10000;
@@ -70,7 +70,7 @@ export class EphemeralStorage {
     return baseLifespan / pressureMultiplier;
   }
 
-  private shouldPurge(dna: DNA, now: number, isHighPressure: boolean): PurgeEvaluation {
+  private evaluatePurge(dna: DNA, now: number, isHighPressure: boolean): PurgeEvaluation {
     const isLowEntropyNoise = dna.entropy < LOW_ENTROPY_THRESHOLD;
     const shouldPurgeImmediately = isLowEntropyNoise && isHighPressure;
     const effectiveLifespan = this.calculateEffectiveLifespan(dna, isHighPressure);
@@ -90,7 +90,7 @@ export class EphemeralStorage {
     const isHighPressure = this.isHighPressure();
 
     for (const [hash, dna] of this.state.entries()) {
-      const evaluation = this.shouldPurge(dna, now, isHighPressure);
+      const evaluation = this.evaluatePurge(dna, now, isHighPressure);
 
       if (evaluation.shouldPurge) {
         this.state.delete(hash);
