@@ -33,15 +33,23 @@ const MAX_SYNTHETIC_PERSONAS = 97;
 const SYNTHETIC_START_INDEX = 5;
 
 /**
- * Validates and constructs a single synthetic persona entry.
+ * Validates and constructs a single synthetic persona entry with strict bounds checking.
  */
 function createSyntheticPersona(index: number): [string, Persona] {
+  if (!Number.isInteger(index) || index < 0 || index >= MAX_SYNTHETIC_PERSONAS) {
+    throw new Error("Persona generation index out of permitted bounds.");
+  }
+
   const personaId = index + SYNTHETIC_START_INDEX;
-  if (!Number.isInteger(personaId) || personaId < 0) {
+  if (!Number.isInteger(personaId) || personaId < SYNTHETIC_START_INDEX || personaId > (MAX_SYNTHETIC_PERSONAS + SYNTHETIC_START_INDEX)) {
     throw new Error("Invalid persona identifier computed.");
   }
   
   const personaName = `Expert Persona ${personaId}`;
+  if (typeof personaName !== "string" || personaName.length === 0) {
+    throw new Error("Computed persona name is invalid.");
+  }
+
   const persona: Persona = Object.freeze({
     description: `A unique, expert-level AI persona focusing on architectural niche area #${personaId}.`,
     promptModifier: `Provide a deep, comprehensive analysis of the topic from the perspective of '${personaName}'. The response must be approximately 250 lines long. Use dense, continuous prose without markdown formatting.`
