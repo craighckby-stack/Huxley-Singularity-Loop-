@@ -36,7 +36,9 @@ export interface DiagnosticReport {
   };
 }
 
-const REGISTERED_CHECKS: Record<string, () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>> = Object.create(null);
+type DiagnosticCheckFunction = () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>;
+
+const REGISTERED_CHECKS: Record<string, DiagnosticCheckFunction> = Object.create(null);
 
 const MAX_CHECKS_LIMIT = 1000;
 const MAX_PATH_LENGTH = 4096;
@@ -53,7 +55,7 @@ function validateCheckName(name: string): void {
 
 export function registerCheck(
   name: string,
-  checkFn: () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>
+  checkFn: DiagnosticCheckFunction
 ): void {
   validateCheckName(name);
   
@@ -70,7 +72,7 @@ export function registerCheck(
 
 async function executeCheck(
   name: string,
-  checkFn: () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>
+  checkFn: DiagnosticCheckFunction
 ): Promise<DiagnosticCheckResult> {
   const startTime = performance.now();
   
@@ -195,10 +197,10 @@ export async function runSystemDiagnostics(): Promise<DiagnosticReport> {
   const total = Object.keys(checks).length;
   const passed = Object.values(checks).filter(c => c.passed).length;
   const failed = total - passed;
-  const is_healthy = total > 0 && failed === 0;
+  const isHealthy = total > 0 && failed === 0;
 
   let status: DiagnosticReport['status'] = 'HEALTHY';
-  if (!is_healthy) {
+  if (!isHealthy) {
     status = failed === total ? 'CRITICAL_FAILURE' : 'DEGRADED';
   }
 
@@ -210,7 +212,7 @@ export async function runSystemDiagnostics(): Promise<DiagnosticReport> {
       total,
       passed,
       failed,
-      is_healthy,
+      is_healthy: isHealthy,
       pass_rate: total > 0 ? parseFloat(((passed / total) * 100).toFixed(2)) : 0,
     },
     telemetry: {
