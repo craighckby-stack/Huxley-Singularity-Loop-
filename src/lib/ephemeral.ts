@@ -18,6 +18,13 @@ const ENTROPY_BONUS_SCALER = 7200000; // Up to 2 extra hours for high entropy
 const PRESSURE_MULTIPLIER_HIGH = 10;
 const PRESSURE_MULTIPLIER_NORMAL = 1;
 
+type PurgeReason = 'PRESSURE_CULL' | 'EXPIRATION' | '';
+
+interface PurgeEvaluation {
+  shouldPurge: boolean;
+  reason: PurgeReason;
+}
+
 export class EphemeralStorage {
   private readonly state = new Map<string, DNA>();
   private memoryPressure = 0; // 0 to 1
@@ -63,7 +70,7 @@ export class EphemeralStorage {
     return baseLifespan / pressureMultiplier;
   }
 
-  private shouldPurge(dna: DNA, now: number, isHighPressure: boolean): { shouldPurge: boolean; reason: string } {
+  private shouldPurge(dna: DNA, now: number, isHighPressure: boolean): PurgeEvaluation {
     const isLowEntropyNoise = dna.entropy < LOW_ENTROPY_THRESHOLD;
     const shouldPurgeImmediately = isLowEntropyNoise && isHighPressure;
     const effectiveLifespan = this.calculateEffectiveLifespan(dna, isHighPressure);
@@ -83,11 +90,11 @@ export class EphemeralStorage {
     const isHighPressure = this.isHighPressure();
 
     for (const [hash, dna] of this.state.entries()) {
-      const { shouldPurge, reason } = this.shouldPurge(dna, now, isHighPressure);
+      const evaluation = this.shouldPurge(dna, now, isHighPressure);
 
-      if (shouldPurge) {
+      if (evaluation.shouldPurge) {
         this.state.delete(hash);
-        console.warn(`[HUXLEY_STORAGE] Purged DNA: ${hash} (Entropy: ${dna.entropy}, Reason: ${reason})`);
+        console.warn(`[HUXLEY_STORAGE] Purged DNA: ${hash} (Entropy: ${dna.entropy}, Reason: ${evaluation.reason})`);
       }
     }
   }
