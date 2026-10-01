@@ -29,3 +29,24 @@ export interface Chunk {
   /** Bounded memory allocation limit for payload deserialization */
   maxPayloadSize?: BoundedMemoryLimit;
 }
+
+/**
+ * Runtime validation guard for BoundedProbability
+ */
+export function isValidProbability(value: number): value is BoundedProbability {
+  return typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 1;
+}
+
+/**
+ * Runtime validation guard for BoundedScore
+ */
+export function isValidScore(value: number): value is BoundedScore {
+  return typeof value === 'number' && !isNaN(value) && value >= 0 && value <= 100;
+}
+
+/**
+ * Runtime validation guard for BoundedMemoryLimit
+ */
+export function isValidMemoryLimit(value: number): value is BoundedMemoryLimit {
+  return typeof value === 'number' && !isNaN(value) && Number.isInteger(value) && value >= 1 && value <= 1048576;
+}
