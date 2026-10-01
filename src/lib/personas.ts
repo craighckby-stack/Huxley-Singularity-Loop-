@@ -32,23 +32,26 @@ const STATIC_PERSONAS: Readonly<Record<string, Persona>> = Object.freeze({
 const MAX_SYNTHETIC_PERSONAS = 97;
 const SYNTHETIC_START_INDEX = 5;
 
+/**
+ * Validates and constructs a single synthetic persona entry.
+ */
+function createSyntheticPersona(index: number): [string, Persona] {
+  const id = index + SYNTHETIC_START_INDEX;
+  if (!Number.isInteger(id) || id < 0) {
+    throw new Error("Invalid persona identifier computed.");
+  }
+  const personaName = `Expert Persona ${id}`;
+  const persona: Persona = Object.freeze({
+    description: `A unique, expert-level AI persona focusing on architectural niche area #${id}.`,
+    promptModifier: `Provide a deep, comprehensive analysis of the topic from the perspective of '${personaName}'. The response must be approximately 250 lines long. Use dense, continuous prose without markdown formatting.`
+  });
+  return [personaName, persona];
+}
+
 // Programmatic generation for the remaining personas with strict bounds checking and input sanitization
 const SYNTHETIC_PERSONAS: Readonly<Record<string, Persona>> = Object.freeze(
   Object.fromEntries(
-    Array.from({ length: MAX_SYNTHETIC_PERSONAS }, (_, index) => {
-      const id = index + SYNTHETIC_START_INDEX;
-      if (!Number.isInteger(id) || id < 0) {
-        throw new Error("Invalid persona identifier computed.");
-      }
-      const personaName = `Expert Persona ${id}`;
-      return [
-        personaName,
-        Object.freeze({
-          description: `A unique, expert-level AI persona focusing on architectural niche area #${id}.`,
-          promptModifier: `Provide a deep, comprehensive analysis of the topic from the perspective of '${personaName}'. The response must be approximately 250 lines long. Use dense, continuous prose without markdown formatting.`
-        })
-      ];
-    })
+    Array.from({ length: MAX_SYNTHETIC_PERSONAS }, (_, index) => createSyntheticPersona(index))
   )
 );
 
