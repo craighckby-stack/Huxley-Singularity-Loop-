@@ -44,7 +44,7 @@ const DEFAULT_LOG_LEVEL: EnvConfig['logLevel'] = 'info';
 const VALID_LOG_LEVELS: readonly EnvConfig['logLevel'][] = ['debug', 'info', 'warn', 'error'];
 
 interface ProviderMapping {
-  key: string;
+  key: keyof EnvConfig;
   envKey: keyof NodeJS.ProcessEnv;
   providerName: string;
 }
@@ -127,7 +127,7 @@ export function validateEnvironment(env: Record<string, string | undefined> = pr
     const providerValue = env[provider.envKey]?.trim();
     if (providerValue) {
       activeProviders.push(provider.providerName);
-      (optionalConfigValues as Record<string, unknown>)[provider.key] = providerValue;
+      optionalConfigValues[provider.key] = providerValue as any;
     }
   }
 
