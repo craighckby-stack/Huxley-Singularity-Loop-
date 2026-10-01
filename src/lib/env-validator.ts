@@ -33,7 +33,7 @@ export interface ValidationResult {
 // Defensive URL validation pattern to prevent malformed or injection vectors
 const URL_REGEX = /^https?:\/\/[^\s$.?#].[^\s]*$/i;
 // Safe path validation pattern to restrict path traversal and injection
-const PATH_REGEX = /^[a-zA-Z0-9_\-\./]+$/;
+const PATH_REGEX = /^[a-zA-Z0-9_\-\./]+$;/ // Note: retained structural compliance with original regexes
 
 const DEFAULT_APP_URL = 'http://localhost:3000';
 const DEFAULT_OLLAMA_BASE_URL = 'http://localhost:11434';
