@@ -8,21 +8,73 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Chunk } from '../types';
 
-// Exponential Backoff implementation as per EMG documentation
-async function fetchWithExponentialBackoff<T>(apiCall: () => Promise<T>, maxRetries = 5, initialDelay = 1000): Promise<T> {
-  for (let i = 0; i < maxRetries; i++) {
+const DEFAULT_MAX_RETRIES = 5;
+const DEFAULT_INITIAL_DELAY_MS = 1000;
+const PIPELINE_TIMEOUT_MS = 90000;
+const MODEL_NAME = "gemini-3-flash-preview";
+
+interface GroundingSource {
+  title: string;
+  uri: string;
+}
+
+export interface PerspectiveReport {
+  persona: string;
+  perspective: string;
+  sources?: GroundingSource[];
+}
+
+export interface SynthesisResult {
+  report: string;
+  sources: GroundingSource[];
+}
+
+async function fetchWithExponentialBackoff<T>(
+  apiCall: () => Promise<T>, 
+  maxRetries = DEFAULT_MAX_RETRIES, 
+  initialDelay = DEFAULT_INITIAL_DELAY_MS
+): Promise<T> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await apiCall();
-    } catch (error: any) {
-      if (i === maxRetries - 1) throw error;
-      const delay = initialDelay * Math.pow(2, i) + Math.random() * 1000;
+    } catch (error) {
+      if (attempt === maxRetries - 1) {
+        throw error;
+      }
+      const delay = initialDelay * Math.pow(2, attempt) + Math.random() * 1000;
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
   throw new Error("Maximum retries exceeded");
 }
 
-export const analyzeRepoChunks = async (context: string, intentAnchor: string | null, runningArchetype: string | null, memoryContext: string): Promise<Chunk[]> => {
+function getApiKey(): string {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not configured.");
+  }
+  return apiKey;
+}
+
+function parseChunkResults(text: string): Chunk[] {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const start = text.indexOf('[');
+    const end = text.lastIndexOf(']');
+    if (start !== -1 && end !== -1) {
+      return JSON.parse(text.substring(start, end + 1));
+    }
+    return [];
+  }
+}
+
+export const analyzeRepoChunks = async (
+  context: string, 
+  intentAnchor: string | null, 
+  runningArchetype: string | null, 
+  memoryContext: string
+): Promise<Chunk[]> => {
   const archetypeContext = runningArchetype 
     ? `RECURSIVE SYSTEM ARCHETYPE (Current Evolved Identity): \n${runningArchetype}`
     : "SYSTEM DEFAULT: HUXLEY_REASONING_ENGINE_V3.2";
@@ -76,38 +128,37 @@ ${context}
         suggestedBranchName: { type: Type.STRING },
         isCriticalUpgrade: { type: Type.BOOLEAN }
       },
-      required: ["title", "file", "code", "explanation", "mutation", "intentAlignmentScore", "philosophyCheck", "ccrrScore", "suggestedBranchName"]
+      required: [
+        "title", 
+        "file", 
+        "code", 
+        "explanation", 
+        "mutation", 
+        "intentAlignmentScore", 
+        "philosophyCheck", 
+        "ccrrScore", 
+        "suggestedBranchName"
+      ]
     }
   };
 
   const executePipeline = async (): Promise<Chunk[]> => {
     return await fetchWithExponentialBackoff(async () => {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) throw new Error("GEMINI_API_KEY is not configured.");
-
+      const apiKey = getApiKey();
       const ai = new GoogleGenAI({ apiKey });
+      
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: MODEL_NAME,
         contents: prompt,
         config: {
           responseMimeType: "application/json",
           responseSchema: schema,
-          // Grounding to reduce hallucination
           tools: [{ googleSearch: {} }]
         }
       });
       
       const text = response.text || "[]";
-      let results: Chunk[] = [];
-      try {
-        results = JSON.parse(text);
-      } catch (parseError) {
-        const start = text.indexOf('[');
-        const end = text.lastIndexOf(']');
-        if (start !== -1 && end !== -1) {
-          results = JSON.parse(text.substring(start, end + 1));
-        }
-      }
+      const results = parseChunkResults(text);
 
       return results.filter(chunk => {
         const isStable = (chunk.ccrrScore || 0) >= 7.0; 
@@ -118,27 +169,23 @@ ${context}
   };
 
   const timeoutPromise = new Promise<Chunk[]>((_, reject) => 
-    setTimeout(() => reject(new Error("CIRCUIT_BREAKER_TRIP: Pipeline timed out (90s)")), 90000)
+    setTimeout(() => reject(new Error("CIRCUIT_BREAKER_TRIP: Pipeline timed out (90s)")), PIPELINE_TIMEOUT_MS)
   );
 
   return Promise.race([executePipeline(), timeoutPromise]);
 };
 
-// NEW: Collective Intelligence Engine implementation from EMG Documentation
-export interface PerspectiveReport {
-  persona: string;
-  perspective: string;
-  sources?: { title: string; uri: string }[];
-}
-
-export const generatePerspective = async (personaName: string, promptModifier: string, topic: string): Promise<PerspectiveReport> => {
+export const generatePerspective = async (
+  personaName: string, 
+  promptModifier: string, 
+  topic: string
+): Promise<PerspectiveReport> => {
   return await fetchWithExponentialBackoff(async () => {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error("GEMINI_API_KEY is missing.");
-
+    const apiKey = getApiKey();
     const ai = new GoogleGenAI({ apiKey });
+    
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: MODEL_NAME,
       contents: `Topic: ${topic}`,
       config: {
         tools: [{ googleSearch: {} }],
@@ -148,7 +195,6 @@ export const generatePerspective = async (personaName: string, promptModifier: s
 
     const text = response.text || "No perspective generated.";
     
-    // Extract grounding sources
     const sources = response.candidates?.[0]?.groundingMetadata?.searchEntryPoint ? [{
       title: "Google Search Knowledge Base",
       uri: "https://www.google.com/search?q=" + encodeURIComponent(topic)
@@ -162,13 +208,15 @@ export const generatePerspective = async (personaName: string, promptModifier: s
   });
 };
 
-export const generateSynthesis = async (topic: string, perspectives: PerspectiveReport[]): Promise<{ report: string; sources: any[] }> => {
+export const generateSynthesis = async (
+  topic: string, 
+  perspectives: PerspectiveReport[]
+): Promise<SynthesisResult> => {
   return await fetchWithExponentialBackoff(async () => {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error("GEMINI_API_KEY is missing.");
-
-    const perspectiveText = perspectives.map((p, i) => 
-      `--- PERSPECTIVE ${i+1} (${p.persona}) ---\n${p.perspective}`
+    const apiKey = getApiKey();
+    
+    const perspectiveText = perspectives.map((p, index) => 
+      `--- PERSPECTIVE ${index + 1} (${p.persona}) ---\n${p.perspective}`
     ).join('\n\n');
 
     const synthesisPrompt = `You are the Huxley Collective Intelligence Synthesizer.
@@ -181,7 +229,7 @@ ${perspectiveText}`;
 
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: MODEL_NAME,
       contents: synthesisPrompt,
       config: {
         tools: [{ googleSearch: {} }]
@@ -190,11 +238,15 @@ ${perspectiveText}`;
 
     const report = response.text || "Synthesis failed.";
     const allSources = perspectives.flatMap(p => p.sources || []);
+    const uniqueUris = Array.from(new Set(allSources.map(s => s.uri)));
     
+    const sources = uniqueUris
+      .map(uri => allSources.find(s => s.uri === uri))
+      .filter((source): source is GroundingSource => source !== undefined);
+
     return { 
       report, 
-      sources: Array.from(new Set(allSources.map(s => s.uri)))
-        .map(uri => allSources.find(s => s.uri === uri))
+      sources
     };
   });
 };
