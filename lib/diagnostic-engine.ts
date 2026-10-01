@@ -99,8 +99,9 @@ async function executeCheck(
 }
 
 async function checkEnvLoader(cwd: string): Promise<Omit<DiagnosticCheckResult, 'duration_ms'>> {
-  const envPath = path.resolve(cwd, '.env');
-  const examplePath = path.resolve(cwd, '.env.example');
+  const resolvedCwd = path.resolve(cwd);
+  const envPath = path.resolve(resolvedCwd, '.env');
+  const examplePath = path.resolve(resolvedCwd, '.env.example');
   
   const envExists = fs.existsSync(envPath) && fs.statSync(envPath).isFile();
   const exampleExists = fs.existsSync(examplePath) && fs.statSync(examplePath).isFile();
@@ -113,10 +114,11 @@ async function checkEnvLoader(cwd: string): Promise<Omit<DiagnosticCheckResult, 
 }
 
 async function checkMemoryPersistence(cwd: string): Promise<Omit<DiagnosticCheckResult, 'duration_ms'>> {
-  const memoryDir = path.resolve(cwd, 'memory');
+  const resolvedCwd = path.resolve(cwd);
+  const memoryDir = path.resolve(resolvedCwd, 'memory');
   
-  if (memoryDir.length > MAX_PATH_LENGTH) {
-    throw new Error('Memory directory path exceeds maximum length restrictions.');
+  if (memoryDir.length > MAX_PATH_LENGTH || !memoryDir.startsWith(resolvedCwd)) {
+    throw new Error('Memory directory path exceeds maximum length restrictions or is outside bounds.');
   }
   
   let exists = false;
