@@ -33,16 +33,19 @@ const MAX_SYNTHETIC_PERSONAS = 97;
 
 // Programmatic generation for the remaining personas with strict bounds checking and input sanitization
 const SYNTHETIC_PERSONAS: Record<string, Persona> = Object.fromEntries(
-  Array.from({ length: MAX_SYNTHETIC_PERSONAS }, (_, i) => {
-    const id = i + 5;
+  Array.from({ length: MAX_SYNTHETIC_PERSONAS }, (_, index) => {
+    const id = index + 5;
     if (!Number.isInteger(id) || id < 0) {
       throw new Error("Invalid persona identifier computed.");
     }
     const personaName = `Expert Persona ${id}`;
-    return [personaName, {
-      description: `A unique, expert-level AI persona focusing on architectural niche area #${id}.`,
-      promptModifier: `Provide a deep, comprehensive analysis of the topic from the perspective of '${personaName}'. The response must be approximately 250 lines long. Use dense, continuous prose without markdown formatting.`
-    }];
+    return [
+      personaName,
+      {
+        description: `A unique, expert-level AI persona focusing on architectural niche area #${id}.`,
+        promptModifier: `Provide a deep, comprehensive analysis of the topic from the perspective of '${personaName}'. The response must be approximately 250 lines long. Use dense, continuous prose without markdown formatting.`
+      }
+    ];
   })
 );
 
