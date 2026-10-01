@@ -36,7 +36,7 @@ export interface DiagnosticReport {
   };
 }
 
-const REGISTERED_CHECKS: Record<string, () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>> = {};
+const REGISTERED_CHECKS: Record<string, () => Promise<Omit<DiagnosticCheckResult, 'duration_ms'>>> = Object.create(null);
 
 const MAX_CHECKS_LIMIT = 1000;
 const MAX_PATH_LENGTH = 4096;
@@ -175,7 +175,7 @@ async function checkConsensusWeighting(): Promise<Omit<DiagnosticCheckResult, 'd
 }
 
 export async function runSystemDiagnostics(): Promise<DiagnosticReport> {
-  const checks: Record<string, DiagnosticCheckResult> = {};
+  const checks: Record<string, DiagnosticCheckResult> = Object.create(null);
   const cwd = process.cwd();
 
   if (cwd.length > MAX_PATH_LENGTH) {
