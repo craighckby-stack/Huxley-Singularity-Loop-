@@ -99,6 +99,9 @@ async function executeCheck(
 }
 
 async function checkEnvLoader(cwd: string): Promise<Omit<DiagnosticCheckResult, 'duration_ms'>> {
+  if (typeof cwd !== 'string' || cwd.length > MAX_PATH_LENGTH) {
+    throw new Error('Invalid working directory path provided.');
+  }
   const resolvedCwd = path.resolve(cwd);
   const envPath = path.resolve(resolvedCwd, '.env');
   const examplePath = path.resolve(resolvedCwd, '.env.example');
@@ -114,6 +117,9 @@ async function checkEnvLoader(cwd: string): Promise<Omit<DiagnosticCheckResult, 
 }
 
 async function checkMemoryPersistence(cwd: string): Promise<Omit<DiagnosticCheckResult, 'duration_ms'>> {
+  if (typeof cwd !== 'string' || cwd.length > MAX_PATH_LENGTH) {
+    throw new Error('Invalid working directory path provided.');
+  }
   const resolvedCwd = path.resolve(cwd);
   const memoryDir = path.resolve(resolvedCwd, 'memory');
   
@@ -182,7 +188,7 @@ export async function runSystemDiagnostics(): Promise<DiagnosticReport> {
   const checks: Record<string, DiagnosticCheckResult> = Object.create(null);
   const cwd = process.cwd();
 
-  if (cwd.length > MAX_PATH_LENGTH) {
+  if (typeof cwd !== 'string' || cwd.length > MAX_PATH_LENGTH) {
     throw new Error('Current working directory path exceeds maximum length restrictions.');
   }
 
