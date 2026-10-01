@@ -17,6 +17,7 @@ const BASE_LIFESPAN_MS = 3600000; // 1 hour
 const ENTROPY_BONUS_SCALER = 7200000; // Up to 2 extra hours for high entropy
 const PRESSURE_MULTIPLIER_HIGH = 10;
 const PRESSURE_MULTIPLIER_NORMAL = 1;
+const MAX_STORAGE_CAPACITY = 10000; // Strict bounds limit for memory safety
 
 type PurgeReason = 'PRESSURE_CULL' | 'EXPIRATION' | '';
 
@@ -36,6 +37,9 @@ export class EphemeralStorage {
   }
 
   public setMemoryPressure(pressure: number): void {
+    if (typeof pressure !== 'number' || Number.isNaN(pressure)) {
+      return;
+    }
     this.memoryPressure = Math.max(0, Math.min(1, pressure));
     if (this.isHighPressure()) {
       this.applyDecay(); // Immediate cull on high pressure
@@ -43,11 +47,33 @@ export class EphemeralStorage {
   }
 
   public persist(dna: DNA): void {
+    if (!dna || typeof dna.hash !== 'string' || dna.hash.length === 0) {
+      return;
+    }
+    if (typeof dna.entropy !== 'number' || Number.isNaN(dna.entropy)) {
+      return;
+    }
+    if (typeof dna.timestamp !== 'number' || Number.isNaN(dna.timestamp)) {
+      return;
+    }
+
+    // Strict capacity bounds checking to prevent memory exhaustion
+    if (this.state.size >= MAX_STORAGE_CAPACITY && !this.state.has(dna.hash)) {
+      // Evict oldest or excess entries if capacity is reached
+      const firstKey = this.state.keys().next().value;
+      if (firstKey !== undefined) {
+        this.state.delete(firstKey);
+      }
+    }
+
     this.state.set(dna.hash, dna);
     console.log(`[HUXLEY_STORAGE] Persisted DNA: ${dna.hash} (Entropy: ${dna.entropy})`);
   }
 
   public get(hash: string): DNA | undefined {
+    if (typeof hash !== 'string' || hash.length === 0) {
+      return undefined;
+    }
     return this.state.get(hash);
   }
 
@@ -64,17 +90,21 @@ export class EphemeralStorage {
   }
 
   private calculateEffectiveLifespan(dna: DNA, isHighPressure: boolean): number {
-    const entropyBonus = dna.entropy * ENTROPY_BONUS_SCALER;
+    const entropy = typeof dna.entropy === 'number' && !Number.isNaN(dna.entropy) ? dna.entropy : 0;
+    const entropyBonus = entropy * ENTROPY_BONUS_SCALER;
     const baseLifespan = BASE_LIFESPAN_MS + entropyBonus;
     const pressureMultiplier = isHighPressure ? PRESSURE_MULTIPLIER_HIGH : PRESSURE_MULTIPLIER_NORMAL;
     return baseLifespan / pressureMultiplier;
   }
 
   private evaluatePurge(dna: DNA, now: number, isHighPressure: boolean): PurgeEvaluation {
-    const isLowEntropyNoise = dna.entropy < LOW_ENTROPY_THRESHOLD;
+    const entropy = typeof dna.entropy === 'number' && !Number.isNaN(dna.entropy) ? dna.entropy : 0;
+    const timestamp = typeof dna.timestamp === 'number' && !Number.isNaN(dna.timestamp) ? dna.timestamp : now;
+    
+    const isLowEntropyNoise = entropy < LOW_ENTROPY_THRESHOLD;
     const shouldPurgeImmediately = isLowEntropyNoise && isHighPressure;
     const effectiveLifespan = this.calculateEffectiveLifespan(dna, isHighPressure);
-    const isExpired = (now - dna.timestamp) > effectiveLifespan;
+    const isExpired = (now - timestamp) > effectiveLifespan;
 
     if (shouldPurgeImmediately) {
       return { shouldPurge: true, reason: 'PRESSURE_CULL' };
@@ -94,7 +124,8 @@ export class EphemeralStorage {
 
       if (evaluation.shouldPurge) {
         this.state.delete(hash);
-        console.warn(`[HUXLEY_STORAGE] Purged DNA: ${hash} (Entropy: ${dna.entropy}, Reason: ${evaluation.reason})`);
+        const entropy = typeof dna.entropy === 'number' ? dna.entropy : 0;
+        console.warn(`[HUXLEY_STORAGE] Purged DNA: ${hash} (Entropy: ${entropy}, Reason: ${evaluation.reason})`);
       }
     }
   }
