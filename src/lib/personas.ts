@@ -30,12 +30,13 @@ const STATIC_PERSONAS: Readonly<Record<string, Persona>> = Object.freeze({
 });
 
 const MAX_SYNTHETIC_PERSONAS = 97;
+const SYNTHETIC_START_INDEX = 5;
 
 // Programmatic generation for the remaining personas with strict bounds checking and input sanitization
 const SYNTHETIC_PERSONAS: Readonly<Record<string, Persona>> = Object.freeze(
   Object.fromEntries(
     Array.from({ length: MAX_SYNTHETIC_PERSONAS }, (_, index) => {
-      const id = index + 5;
+      const id = index + SYNTHETIC_START_INDEX;
       if (!Number.isInteger(id) || id < 0) {
         throw new Error("Invalid persona identifier computed.");
       }
