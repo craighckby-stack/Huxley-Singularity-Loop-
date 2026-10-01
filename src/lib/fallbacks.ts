@@ -5,13 +5,36 @@
  * Architecture: Type-safe modular unit with resilient state interfaces.
  */
 
-
 import { Chunk } from '../types';
 
 interface FallbackConfig {
   anthropicKey?: string;
   cerebrasKey?: string;
   grokKey?: string;
+}
+
+interface AIProxyRequestPayload {
+  messages: Array<{ role: string; content: string }>;
+}
+
+interface AnthropicResponseContent {
+  text?: string;
+}
+
+interface AnthropicResponseBody {
+  content?: AnthropicResponseContent[];
+}
+
+interface CerebrasChoiceMessage {
+  content?: string;
+}
+
+interface CerebrasChoice {
+  message?: CerebrasChoiceMessage;
+}
+
+interface CerebrasResponseBody {
+  choices?: CerebrasChoice[];
 }
 
 const MAX_PROMPT_LENGTH = 100000;
@@ -44,81 +67,6 @@ const validateChunkArray = (data: unknown): Chunk[] => {
   return validatedChunks;
 };
 
-export const callFallbackAI = async (prompt: string, config: FallbackConfig): Promise<Chunk[]> => {
-  const sanitizedPrompt = validateAndSanitizePrompt(prompt);
-
-  // Try Anthropic First
-  try {
-    console.log("[Fallback] Attempting Anthropic via Proxy...");
-    const response = await fetch('/api/ai/anthropic', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: sanitizedPrompt + "\n\nRESPONSE MUST BE A JSON ARRAY OF CHUNKS. NO EXPLANATION." }]
-      })
-    });
-    const rawText = await response.text();
-    if (rawText.length > MAX_RESPONSE_LENGTH) {
-      throw new Error("RESPONSE_TOO_LARGE: Response exceeds size bounds.");
-    }
-    const data = JSON.parse(rawText);
-    if (response.ok && data.content && data.content[0] && typeof data.content[0].text === 'string') {
-      return parseAIResponse(data.content[0].text);
-    }
-    console.warn("[Fallback] Anthropic returned error or invalid format:", data);
-  } catch (e) {
-    console.error("[Fallback] Anthropic proxy failed:", e);
-  }
-
-  // Try Cerebras Second
-  try {
-    console.log("[Fallback] Attempting Cerebras via Proxy...");
-    const response = await fetch('/api/ai/cerebras', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: sanitizedPrompt + "\n\nRESPONSE MUST BE A JSON ARRAY. RETURN ONLY JSON." }]
-      })
-    });
-    const rawText = await response.text();
-    if (rawText.length > MAX_RESPONSE_LENGTH) {
-      throw new Error("RESPONSE_TOO_LARGE: Response exceeds size bounds.");
-    }
-    const data = JSON.parse(rawText);
-    if (response.ok && data.choices && data.choices[0] && data.choices[0].message && typeof data.choices[0].message.content === 'string') {
-      return parseAIResponse(data.choices[0].message.content);
-    }
-    console.warn("[Fallback] Cerebras returned error or invalid format:", data);
-  } catch (e) {
-    console.error("[Fallback] Cerebras proxy failed:", e);
-  }
-
-  // Try Grok Third
-  try {
-    console.log("[Fallback] Attempting Grok via Proxy...");
-    const response = await fetch('/api/ai/grok', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: sanitizedPrompt + "\n\nRESPONSE MUST BE A JSON ARRAY. RETURN ONLY JSON." }]
-      })
-    });
-    const rawText = await response.text();
-    if (rawText.length > MAX_RESPONSE_LENGTH) {
-      throw new Error("RESPONSE_TOO_LARGE: Response exceeds size bounds.");
-    }
-    const data = JSON.parse(rawText);
-    if (response.ok && data.choices && data.choices[0] && data.choices[0].message && typeof data.choices[0].message.content === 'string') {
-      return parseAIResponse(data.choices[0].message.content);
-    }
-    console.warn("[Fallback] Grok returned error or invalid format:", data);
-  } catch (e) {
-    console.error("[Fallback] Grok proxy failed:", e);
-  }
-
-  throw new Error("ALL_MODELS_EXHAUSTED: Gemini failed and no fallbacks succeeded or were configured on server.");
-};
-
 const parseAIResponse = (text: string): Chunk[] => {
   try {
     if (typeof text !== 'string') {
@@ -128,7 +76,6 @@ const parseAIResponse = (text: string): Chunk[] => {
       console.error("Response text exceeds maximum length.");
       return [];
     }
-    // Basic cleaning to find JSON array
     const start = text.indexOf('[');
     const end = text.lastIndexOf(']');
     if (start !== -1 && end !== -1 && start < end) {
@@ -141,4 +88,95 @@ const parseAIResponse = (text: string): Chunk[] => {
     console.error("Failed to parse fallback AI response:", e);
     return [];
   }
+};
+
+const requestAIProxy = async (endpoint: string, prompt: string, suffix: string): Promise<Chunk[] | null> => {
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: `${prompt}\n\n${suffix}` }]
+      } as AIProxyRequestPayload)
+    });
+
+    const rawText = await response.text();
+    if (rawText.length > MAX_RESPONSE_LENGTH) {
+      throw new Error("RESPONSE_TOO_LARGE: Response exceeds size bounds.");
+    }
+
+    const data = JSON.parse(rawText);
+    if (!response.ok) {
+      console.warn(`[Fallback] Endpoint ${endpoint} returned error:`, data);
+      return null;
+    }
+
+    return data;
+  } catch (e) {
+    console.error(`[Fallback] Request to ${endpoint} failed:`, e);
+    return null;
+  }
+};
+
+export const callFallbackAI = async (prompt: string, config: FallbackConfig): Promise<Chunk[]> => {
+  const sanitizedPrompt = validateAndSanitizePrompt(prompt);
+
+  // 1. Try Anthropic First
+  console.log("[Fallback] Attempting Anthropic via Proxy...");
+  const anthropicData = await requestAIProxy(
+    '/api/ai/anthropic',
+    sanitizedPrompt,
+    "RESPONSE MUST BE A JSON ARRAY OF CHUNKS. NO EXPLANATION."
+  ) as AnthropicResponseBody | null;
+
+  if (
+    anthropicData?.content &&
+    Array.isArray(anthropicData.content) &&
+    anthropicData.content[0] &&
+    typeof anthropicData.content[0].text === 'string'
+  ) {
+    return parseAIResponse(anthropicData.content[0].text);
+  } else if (anthropicData) {
+    console.warn("[Fallback] Anthropic returned invalid format:", anthropicData);
+  }
+
+  // 2. Try Cerebras Second
+  console.log("[Fallback] Attempting Cerebras via Proxy...");
+  const cerebrasData = await requestAIProxy(
+    '/api/ai/cerebras',
+    sanitizedPrompt,
+    "RESPONSE MUST BE A JSON ARRAY. RETURN ONLY JSON."
+  ) as CerebrasResponseBody | null;
+
+  if (
+    cerebrasData?.choices &&
+    Array.isArray(cerebrasData.choices) &&
+    cerebrasData.choices[0]?.message &&
+    typeof cerebrasData.choices[0].message.content === 'string'
+  ) {
+    return parseAIResponse(cerebrasData.choices[0].message.content);
+  } else if (cerebrasData) {
+    console.warn("[Fallback] Cerebras returned invalid format:", cerebrasData);
+  }
+
+  // 3. Try Grok Third
+  console.log("[Fallback] Attempting Grok via Proxy...");
+  const grokData = await requestAIProxy(
+    '/api/ai/grok',
+    sanitizedPrompt,
+    "RESPONSE MUST BE A JSON ARRAY. RETURN ONLY JSON."
+  ) as CerebrasResponseBody | null;
+
+  if (
+    grokData?.choices &&
+    Array.isArray(grokData.choices) &&
+    grokData.choices[0]?.message &&
+    typeof grokData.choices[0].message.content === 'string'
+  ) {
+    return parseAIResponse(grokData.choices[0].message.content);
+  } else if (grokData) {
+    console.warn("[Fallback] Grok returned invalid format:", grokData);
+  }
+
+  throw new Error("ALL_MODELS_EXHAUSTED: Gemini failed and no fallbacks succeeded or were configured on server.");
 };
