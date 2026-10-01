@@ -48,13 +48,11 @@ function parseAndClampWeight(value: string | undefined, fallback: number): numbe
 }
 
 export function parseConsensusWeights(env: Record<string, string | undefined> = process.env): ProviderWeightMap {
-  return {
-    gemini: parseAndClampWeight(env.CONSENSUS_WEIGHT_GEMINI, DEFAULT_WEIGHTS.gemini),
-    anthropic: parseAndClampWeight(env.CONSENSUS_WEIGHT_ANTHROPIC, DEFAULT_WEIGHTS.anthropic),
-    deepseek: parseAndClampWeight(env.CONSENSUS_WEIGHT_DEEPSEEK, DEFAULT_WEIGHTS.deepseek),
-    xai: parseAndClampWeight(env.CONSENSUS_WEIGHT_XAI, DEFAULT_WEIGHTS.xai),
-    cerebras: parseAndClampWeight(env.CONSENSUS_WEIGHT_CEREBRAS, DEFAULT_WEIGHTS.cerebras),
-    groq: parseAndClampWeight(env.CONSENSUS_WEIGHT_GROQ, DEFAULT_WEIGHTS.groq),
-    local: parseAndClampWeight(env.CONSENSUS_WEIGHT_LOCAL, DEFAULT_WEIGHTS.local),
-  };
+  const providers = Object.keys(DEFAULT_WEIGHTS) as (keyof ProviderWeightMap)[];
+  
+  return providers.reduce((acc, provider) => {
+    const envKey = `CONSENSUS_WEIGHT_${provider.toUpperCase()}`;
+    acc[provider] = parseAndClampWeight(env[envKey], DEFAULT_WEIGHTS[provider]);
+    return acc;
+  }, {} as ProviderWeightMap);
 }
