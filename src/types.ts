@@ -5,11 +5,18 @@
  * Architecture: Type-safe modular unit with resilient state interfaces.
  */
 
-// Branded types for strict input validation and injection mitigation
+// ============================================================================
+// Branded Types
+// ============================================================================
+
 export type SanitizedString = string & { readonly __brand: unique symbol };
 export type BoundedProbability = number & { readonly __range: '[0, 1]' };
 export type BoundedScore = number & { readonly __range: '[0, 100]' };
 export type BoundedMemoryLimit = number & { readonly __range: '[1, 1048576]' };
+
+// ============================================================================
+// Core Data Models
+// ============================================================================
 
 export interface Chunk {
   readonly title: string;
@@ -29,6 +36,10 @@ export interface Chunk {
   /** Bounded memory allocation limit for payload deserialization */
   readonly maxPayloadSize?: BoundedMemoryLimit;
 }
+
+// ============================================================================
+// Runtime Validation Guards
+// ============================================================================
 
 /**
  * Runtime validation guard for BoundedProbability
