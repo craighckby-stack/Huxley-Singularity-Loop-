@@ -33,18 +33,18 @@ const PROVIDER_ENV_KEYS: ReadonlyArray<readonly [keyof ProviderWeightMap, string
  * Validates, bounds-checks, and parses a numeric weight from an environment variable string.
  * Clamps output strictly between 0 and 1, defaulting to fallback if invalid or NaN.
  */
-function parseAndClampWeight(value: string | undefined, fallback: number): number {
+function parseAndClampWeight(value: unknown, fallback: number): number {
   if (typeof value !== 'string') {
     return fallback;
   }
   
   const trimmed = value.trim();
-  if (trimmed === '') {
+  if (trimmed === '' || trimmed.length > 32) {
     return fallback;
   }
   
   const parsed = Number(trimmed);
-  if (!Number.isFinite(parsed)) {
+  if (!Number.isFinite(parsed) || Number.isNaN(parsed)) {
     return fallback;
   }
   
@@ -54,8 +54,9 @@ function parseAndClampWeight(value: string | undefined, fallback: number): numbe
 export function parseConsensusWeights(
   env: Record<string, string | undefined> = typeof process !== 'undefined' && process.env ? process.env : {}
 ): ProviderWeightMap {
+  const safeEnv = (env !== null && typeof env === 'object') ? env : {};
   return PROVIDER_ENV_KEYS.reduce((acc, [provider, envKey]) => {
-    acc[provider] = parseAndClampWeight(env[envKey], DEFAULT_WEIGHTS[provider]);
+    acc[provider] = parseAndClampWeight(safeEnv[envKey], DEFAULT_WEIGHTS[provider]);
     return acc;
   }, { ...DEFAULT_WEIGHTS });
 }
